@@ -1,0 +1,108 @@
+# =============================================================================
+# Domain: Organization
+# Entity: Department
+# Description: A hierarchical org unit under a Company. Referenced as department_id (an
+# accounting dimension) across the ERP.
+# =============================================================================
+
+models:
+  - name: Department
+    collection: departments
+    description: "Hierarchical org unit under a Company (referenced as department_id dimension)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique department identifier"
+
+      company_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Company.id)"]
+        description: "Owning company"
+
+      code:
+        type: string
+        attributes: ["@required", "@max(30)"]
+        description: "Short code, unique within the company"
+
+      name:
+        type: string
+        attributes: ["@required", "@max(150)"]
+        description: "Department name"
+
+      # Hierarchy (tree)
+      parent_id:
+        type: uuid?
+        attributes: ["@foreign_key(Department.id)"]
+        description: "Parent department"
+
+      level:
+        type: int
+        attributes: ["@default(0)", "@non_negative"]
+        description: "Hierarchy level (0 = top)"
+
+      is_group:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "Group node (cannot own transactions directly)"
+
+      # Optional links
+      branch_id:
+        type: uuid?
+        attributes: ["@foreign_key(Branch.id)"]
+        description: "Branch this department is located at"
+
+      manager_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Department manager # logical FK to sapiens.User.id"
+
+      sort_order:
+        type: int
+        attributes: ["@default(0)"]
+        description: "Display order"
+
+      status:
+        type: OrgStatus
+        attributes: ["@default(active)"]
+        description: "Lifecycle status"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      company:
+        type: Company
+        attributes: ["@one", "@foreign_key(company_id)"]
+        description: "Owning company"
+        inverse: departments
+
+      parent:
+        type: Department?
+        attributes: ["@one", "@foreign_key(parent_id)"]
+        description: "Parent department"
+        inverse: children
+
+      children:
+        type: Department[]
+        attributes: ["@one_to_many"]
+        description: "Child departments"
+        inverse: parent
+
+      branch:
+        type: Branch?
+        attributes: ["@one", "@foreign_key(branch_id)"]
+        description: "Branch location"
+        inverse: departments
+
+    indexes:
+      - type: unique
+        fields: [company_id, code]
+        where: "deleted_at IS NULL"
+      - type: index
+        fields: [company_id, parent_id, sort_order]
+      - type: index
+        fields: [company_id, status]

@@ -1,0 +1,115 @@
+# =============================================================================
+# Organization Hooks - Company/Branch/Department lifecycle + write-path rules
+# =============================================================================
+# Declarative spec of the behavior implemented in
+#   src/application/service/onboarding_service.rs   (company onboarding saga)
+#   src/application/service/org_write_service.rs    (validated Branch/Department writes)
+# and enforced by the guarded composition src/presentation/http/guarded_routes.rs,
+# proven by tests/onboarding_golden_cases.rs and tests/integrity_probes.rs.
+
+module: organization
+version: 2
+
+# -----------------------------------------------------------------------------
+# State machines - lifecycle status per entity.
+# `dissolved` is terminal: a company cannot be un-dissolved (R9).
+# -----------------------------------------------------------------------------
+state_machines:
+  - entity: Company
+    field: status
+    initial: active
+    states: [active, inactive, suspended, dissolved]
+    transitions:
+      - { from: active,    to: inactive,  on: deactivate }
+      - { from: inactive,  to: active,    on: reactivate }
+      - { from: active,    to: suspended, on: suspend }
+      - { from: suspended, to: active,    on: unsuspend }
+      - { from: active,    to: dissolved, on: dissolve }
+      - { from: inactive,  to: dissolved, on: dissolve }
+      - { from: suspended, to: dissolved, on: dissolve }
+    effects:
+      dissolve: "emit CompanyStatusChanged(to=dissolved)"
+
+  - entity: Branch
+    field: status
+    initial: active
+    states: [active, inactive]
+    transitions:
+      - { from: active,   to: inactive, on: deactivate }
+      - { from: inactive, to: active,   on: reactivate }
+
+  - entity: Department
+    field: status
+    initial: active
+    states: [active, inactive]
+    transitions:
+      - { from: active,   to: inactive, on: deactivate }
+      - { from: inactive, to: active,   on: reactivate }
+
+# -----------------------------------------------------------------------------
+# Write-path rules (validated before any write). Each maps to a stable error_code
+# returned on violation and to the golden/probe case that proves it.
+# -----------------------------------------------------------------------------
+rules:
+  - id: R1
+    name: npwp_format
+    when: writing
+    assert: "npwp present => digits(npwp) in {15, 16}"
+    error_code: invalid_npwp
+  - id: R2
+    name: company_born_with_head_office
+    when: onboarding
+    assert: "a head-office Branch is created in the same transaction"
+    error_code: none
+  - id: R3
+    name: unique_company_code
+    when: onboarding
+    assert: "code unique among non-deleted companies"
+    error_code: duplicate_company_code
+  - id: R4
+    name: unique_company_npwp
+    when: onboarding
+    assert: "npwp unique among non-deleted companies when present"
+    error_code: duplicate_npwp
+  - id: R5
+    name: branch_company_exists
+    when: writing
+    assert: "company_id references an existing non-deleted Company"
+    error_code: company_not_found
+  - id: R6
+    name: department_parent_same_company
+    when: writing
+    assert: "parent_id present => parent exists AND parent.company_id == company_id"
+    error_code: parent_different_company
+  - id: R7
+    name: department_branch_same_company
+    when: writing
+    assert: "branch_id present => branch exists AND branch.company_id == company_id"
+    error_code: branch_different_company
+  - id: R8
+    name: department_no_self_parent
+    when: writing
+    assert: "parent_id != self.id"
+    error_code: self_parent
+  - id: R9
+    name: company_lifecycle_no_undissolve
+    when: status_change
+    assert: "transition allowed by the Company state machine; dissolved is terminal"
+    error_code: invalid_status_transition
+
+# -----------------------------------------------------------------------------
+# Domain events (emission is the parent service's responsibility).
+# -----------------------------------------------------------------------------
+events:
+  CompanyOnboarded:
+    when: "onboarding succeeds"
+    payload: [company_id, hq_branch_id, code]
+  BranchAdded:
+    when: "a branch is created"
+    payload: [company_id, branch_id, is_head_office]
+  DepartmentAdded:
+    when: "a department is created"
+    payload: [company_id, department_id]
+  CompanyStatusChanged:
+    when: "company status transitions"
+    payload: [company_id, from, to]

@@ -1,0 +1,145 @@
+# =============================================================================
+# Domain: Organization
+# Entity: Branch
+# Description: A physical/operational location under a Company. Referenced as branch_id
+# (an org dimension) across the ERP.
+# =============================================================================
+
+models:
+  - name: Branch
+    collection: branches
+    description: "Operational location under a Company (referenced as branch_id dimension)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique branch identifier"
+
+      company_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Company.id)"]
+        description: "Owning company"
+
+      code:
+        type: string
+        attributes: ["@required", "@max(30)"]
+        description: "Short code, unique within the company"
+
+      name:
+        type: string
+        attributes: ["@required", "@max(150)"]
+        description: "Branch name"
+
+      branch_type:
+        type: BranchType
+        attributes: ["@default(branch)"]
+        description: "Kind of location"
+
+      is_head_office:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "Head office / kantor pusat"
+
+      # A branch (cabang) may have its own NPWP for local tax reporting.
+      npwp:
+        type: string?
+        attributes: ["@max(25)"]
+        description: "Branch NPWP (if registered separately)"
+
+      email:
+        type: string?
+        attributes: ["@max(150)"]
+        description: "Branch email"
+
+      phone:
+        type: string?
+        attributes: ["@max(30)"]
+        description: "Branch phone"
+
+      address:
+        type: string?
+        attributes: ["@max(255)"]
+        description: "Street address"
+
+      city:
+        type: string?
+        attributes: ["@max(100)"]
+        description: "City / kabupaten"
+
+      province:
+        type: string?
+        attributes: ["@max(100)"]
+        description: "Province / provinsi"
+
+      postal_code:
+        type: string?
+        attributes: ["@max(10)"]
+        description: "Postal code"
+
+      country:
+        type: string
+        attributes: ["@default('ID')", "@length(2)"]
+        description: "ISO 3166-1 alpha-2 country code"
+
+      status:
+        type: OrgStatus
+        attributes: ["@default(active)"]
+        description: "Lifecycle status"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      company:
+        type: Company
+        attributes: ["@one", "@foreign_key(company_id)"]
+        description: "Owning company"
+        inverse: branches
+
+      departments:
+        type: Department[]
+        attributes: ["@one_to_many"]
+        description: "Departments located at this branch"
+        inverse: branch
+
+    indexes:
+      - type: unique
+        fields: [company_id, code]
+        where: "deleted_at IS NULL"
+      - type: index
+        fields: [company_id, status]
+      - type: index
+        fields: [company_id, is_head_office]
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+enums:
+  - name: BranchType
+    description: "Kind of operational location"
+    variants:
+      - name: head_office
+        description: "Head office (kantor pusat)"
+      - name: branch
+        description: "Branch office (cabang)"
+        default: true
+      - name: warehouse
+        description: "Warehouse (gudang)"
+      - name: outlet
+        description: "Retail outlet / store"
+      - name: factory
+        description: "Factory / plant (pabrik)"
+
+  # Shared status for Branch and Department.
+  - name: OrgStatus
+    description: "Active/inactive status for org units"
+    variants:
+      - name: active
+        description: "Active"
+        default: true
+      - name: inactive
+        description: "Inactive"

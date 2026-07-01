@@ -1,0 +1,199 @@
+# =============================================================================
+# Domain: Organization
+# Entity: Company
+# Description: Legal entity / books owner. Referenced by every module's `company_id`.
+# Multi-tenancy is schema-per-tenant → NO provider_id; a tenant schema may hold several
+# Companies (legal entities).
+# =============================================================================
+
+models:
+  - name: Company
+    collection: companies
+    description: "Legal entity that owns the books (referenced as company_id across the ERP)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique company identifier"
+
+      # Identification
+      code:
+        type: string
+        attributes: ["@required", "@max(30)"]
+        description: "Short unique code (e.g., ACME, HQ)"
+
+      legal_name:
+        type: string
+        attributes: ["@required", "@max(200)"]
+        description: "Registered legal name (e.g., PT Acme Indonesia)"
+
+      trade_name:
+        type: string?
+        attributes: ["@max(200)"]
+        description: "Trading / brand name"
+
+      # Indonesia-first statutory identifiers
+      npwp:
+        type: string?
+        attributes: ["@max(25)"]
+        description: "Nomor Pokok Wajib Pajak (tax ID) — 15 or 16 digits"
+
+      nib:
+        type: string?
+        attributes: ["@max(30)"]
+        description: "Nomor Induk Berusaha (business registration number)"
+
+      entity_type:
+        type: CompanyEntityType
+        attributes: ["@default(pt)"]
+        description: "Indonesian legal form"
+
+      # Accounting configuration
+      base_currency:
+        type: string
+        attributes: ["@default('IDR')", "@length(3)"]
+        description: "Functional currency (ISO 4217)"
+
+      fiscal_year_start_month:
+        type: int
+        attributes: ["@default(1)", "@min(1)", "@max(12)"]
+        description: "Month the fiscal year starts (1 = January)"
+
+      # Contact / address
+      email:
+        type: string?
+        attributes: ["@max(150)"]
+        description: "Primary email"
+
+      phone:
+        type: string?
+        attributes: ["@max(30)"]
+        description: "Primary phone"
+
+      address:
+        type: string?
+        attributes: ["@max(255)"]
+        description: "Street address"
+
+      city:
+        type: string?
+        attributes: ["@max(100)"]
+        description: "City / kabupaten"
+
+      province:
+        type: string?
+        attributes: ["@max(100)"]
+        description: "Province / provinsi"
+
+      postal_code:
+        type: string?
+        attributes: ["@max(10)"]
+        description: "Postal code"
+
+      country:
+        type: string
+        attributes: ["@default('ID')", "@length(2)"]
+        description: "ISO 3166-1 alpha-2 country code"
+
+      # Group / consolidation (optional self-reference)
+      parent_company_id:
+        type: uuid?
+        attributes: ["@foreign_key(Company.id)"]
+        description: "Parent company for group/consolidation"
+
+      is_default:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "Default company for the tenant"
+
+      status:
+        type: CompanyStatus
+        attributes: ["@default(active)"]
+        description: "Lifecycle status"
+
+      notes:
+        type: string?
+        attributes: ["@max(1000)"]
+        description: "Internal notes"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      parent:
+        type: Company?
+        attributes: ["@one", "@foreign_key(parent_company_id)"]
+        description: "Parent company"
+        inverse: subsidiaries
+
+      subsidiaries:
+        type: Company[]
+        attributes: ["@one_to_many"]
+        description: "Subsidiary companies"
+        inverse: parent
+
+      branches:
+        type: Branch[]
+        attributes: ["@one_to_many"]
+        description: "Branches of this company"
+        inverse: company
+
+      departments:
+        type: Department[]
+        attributes: ["@one_to_many"]
+        description: "Departments of this company"
+        inverse: company
+
+    indexes:
+      - type: unique
+        fields: [code]
+        where: "deleted_at IS NULL"
+      - type: unique
+        fields: [npwp]
+        where: "npwp IS NOT NULL AND deleted_at IS NULL"
+      - type: index
+        fields: [status]
+      - type: index
+        fields: [parent_company_id]
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+enums:
+  - name: CompanyEntityType
+    description: "Indonesian legal entity forms"
+    variants:
+      - name: pt
+        description: "Perseroan Terbatas (limited liability company)"
+        default: true
+      - name: cv
+        description: "Commanditaire Vennootschap"
+      - name: firma
+        description: "Firma (partnership)"
+      - name: perorangan
+        description: "Sole proprietorship (usaha perorangan)"
+      - name: koperasi
+        description: "Cooperative"
+      - name: yayasan
+        description: "Foundation"
+      - name: bumn
+        description: "State-owned enterprise"
+      - name: other
+        description: "Other"
+
+  - name: CompanyStatus
+    description: "Company lifecycle status"
+    variants:
+      - name: active
+        description: "Active"
+        default: true
+      - name: inactive
+        description: "Inactive (no new activity)"
+      - name: suspended
+        description: "Suspended"
+      - name: dissolved
+        description: "Dissolved / closed"

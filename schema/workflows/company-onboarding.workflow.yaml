@@ -1,0 +1,89 @@
+# Company Onboarding Workflow V2.0
+# The transactional saga executed by OnboardingService
+# (src/application/service/onboarding_service.rs), proven by tests/onboarding_golden_cases.rs.
+# Both write steps run in ONE DB transaction; any failure rolls the whole thing back.
+
+name: CompanyOnboarding
+description: |
+  Bring a new legal entity onto the platform atomically:
+  - validate NPWP format (15/16 digits) before any write
+  - fast pre-check on company code uniqueness (the partial unique index is the real arbiter)
+  - in one transaction: create the Company, then its head-office Branch
+  - a company is never born without a head office
+  On a unique violation the constraint name distinguishes duplicate_company_code vs duplicate_npwp.
+
+version: 2
+
+trigger:
+  event: CompanyOnboardRequested
+  extract:
+    code: "event.code"
+    legal_name: "event.legal_name"
+    npwp: "event.npwp"
+
+config:
+  timeout: 15s
+  persistence: false
+
+context:
+  company_id: null
+  hq_branch_id: null
+
+steps:
+  - name: validate_npwp
+    type: action
+    action: validate
+    on_success:
+      next: check_code_unique
+    on_failure:
+      next: rejected_invalid_npwp
+
+  - name: check_code_unique
+    type: action
+    action: query
+    entity: Company
+    params:
+      code: "{{ context.code }}"
+    on_success:
+      next: write_company
+    on_failure:
+      next: rejected_duplicate
+
+  - name: write_company
+    type: action
+    action: create
+    entity: Company
+    on_success:
+      set:
+        company_id: "{{ result.id }}"
+      next: write_head_office_branch
+    on_failure:
+      next: rejected_duplicate      # unique violation → duplicate_company_code / duplicate_npwp
+
+  - name: write_head_office_branch
+    type: action
+    action: create
+    entity: Branch
+    params:
+      branch_type: head_office
+      is_head_office: true
+    on_success:
+      set:
+        hq_branch_id: "{{ result.id }}"
+      next: onboarded
+
+  # Terminals
+  - name: onboarded
+    type: terminal
+    status: completed
+    reason: "CompanyOnboarded — Company + head-office Branch written in one transaction"
+
+  - name: rejected_invalid_npwp
+    type: terminal
+    status: failed
+    reason: "invalid_npwp — NPWP is not 15 or 16 digits; nothing written"
+
+  - name: rejected_duplicate
+    type: terminal
+    status: failed
+    reason: "duplicate_company_code / duplicate_npwp — code or NPWP already registered"
