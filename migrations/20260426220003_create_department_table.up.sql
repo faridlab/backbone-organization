@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS organization.departments (
     code TEXT NOT NULL,
     name TEXT NOT NULL,
     parent_id UUID,
-    level INTEGER NOT NULL DEFAULT 0,
+    level INTEGER NOT NULL DEFAULT 0 CHECK (level >= 0),
     is_group BOOLEAN NOT NULL DEFAULT FALSE,
     branch_id UUID,
     manager_id UUID,
