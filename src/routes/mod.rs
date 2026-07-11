@@ -12,8 +12,11 @@ use std::sync::Arc;
 // Import handlers
 use crate::presentation::http::{
     create_branch_routes,
+    create_branch_read_routes,
     create_company_routes,
-    create_department_routes
+    create_company_read_routes,
+    create_department_routes,
+    create_department_read_routes
 };
 
 // Import AppState for stateful routes
@@ -40,6 +43,18 @@ pub fn create_stateless_routes(module: &crate::OrganizationModule) -> Router<()>
         .merge(create_branch_routes(module.branch_service.clone()))
         .merge(create_company_routes(module.company_service.clone()))
         .merge(create_department_routes(module.department_service.clone()))
+}
+
+/// Read-only routes for the Organization module — every entity mounted READ-ONLY (the guarded base).
+///
+/// The generic `create_stateless_routes` exposes full mutable CRUD with no domain
+/// validation; this exposes only reads, so generic mutation can't bypass a write
+/// service's invariants. Extend it: `create_readonly_organization_routes(m).merge(my_validated_writes)`.
+pub fn create_readonly_organization_routes(module: &crate::OrganizationModule) -> Router<()> {
+    Router::new()
+        .merge(create_branch_read_routes(module.branch_service.clone()))
+        .merge(create_company_read_routes(module.company_service.clone()))
+        .merge(create_department_read_routes(module.department_service.clone()))
 }
 
 /// Get all routes (stateless) for the Organization module.
