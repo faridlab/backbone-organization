@@ -12,10 +12,26 @@
 //!   - **Branch / Department**: READ + **validated create** and **validated re-point** via
 //!     `OrgWriteService` (NPWP format, company existence, same-company parent/branch, no cycle).
 //!     Generic update/delete/upsert/bulk are intentionally NOT mounted here.
+//!
+//! Every write above is additionally **tenant-guarded**: `tenant_auth` proves the caller's tenant
+//! from a signed Bearer token and the handlers stamp `company_id` from that token, never from the
+//! request body — a client must not be able to name the company it writes into.
+//!
+//! `POST /companies/onboard` is deliberately NOT behind the tenant guard: it *creates* the tenant,
+//! so there is no pre-existing `company_id` a token could carry. It is an unauthenticated-by-design
+//! signup seam whose access control belongs to the composing service, not to this guard.
 
 use std::sync::Arc;
 
-use axum::{extract::{Path, State}, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    middleware::from_fn_with_state,
+    response::IntoResponse,
+    routing::post,
+    Json, Router,
+};
+use backbone_auth::tenant::{tenant_auth, TenantContext, TenantVerifier};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -42,7 +58,8 @@ fn err_response(e: OrgWriteError) -> axum::response::Response {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CreateBranchBody {
-    company_id: Uuid,
+    // No `company_id`: the tenant is derived from the signed token via `TenantContext`, never from
+    // the request body — a client must not be able to name the company it creates a branch in.
     code: String,
     name: String,
     #[serde(default)]
@@ -66,11 +83,12 @@ struct IdResponse {
 
 async fn create_branch(
     State(svc): State<Arc<OrgWriteService>>,
+    tenant: TenantContext,
     Json(b): Json<CreateBranchBody>,
 ) -> axum::response::Response {
     match svc
         .create_branch(NewBranch {
-            company_id: b.company_id,
+            company_id: tenant.company_id,
             code: b.code,
             name: b.name,
             branch_type: b.branch_type,
@@ -91,11 +109,14 @@ async fn create_branch(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CreateDepartmentBody {
-    company_id: Uuid,
+    // No `company_id`: the tenant comes from the signed token (`TenantContext`), not the body.
     code: String,
     name: String,
     #[serde(default)]
     parent_id: Option<Uuid>,
+    // `branch_id` stays in the body: unlike the tenant, it is a *domain choice* (which of the
+    // tenant's branches this department sits under), and `OrgWriteService` already validates that it
+    // belongs to `company_id` — i.e. to the token's tenant.
     #[serde(default)]
     branch_id: Option<Uuid>,
     #[serde(default)]
@@ -106,11 +127,12 @@ struct CreateDepartmentBody {
 
 async fn create_department(
     State(svc): State<Arc<OrgWriteService>>,
+    tenant: TenantContext,
     Json(d): Json<CreateDepartmentBody>,
 ) -> axum::response::Response {
     match svc
         .create_department(NewDepartment {
-            company_id: d.company_id,
+            company_id: tenant.company_id,
             code: d.code,
             name: d.name,
             parent_id: d.parent_id,
@@ -145,18 +167,33 @@ async fn repoint_department(
     }
 }
 
-fn create_org_write_routes(svc: Arc<OrgWriteService>) -> Router {
+fn create_org_write_routes(svc: Arc<OrgWriteService>, verifier: TenantVerifier) -> Router {
     Router::new()
         .route("/branches", post(create_branch))
         .route("/departments", post(create_department))
         .route("/departments/{id}/repoint", post(repoint_department))
+        // Every write above is tenant-scoped: `tenant_auth` rejects a request whose token is absent,
+        // invalid, or carries no `company_id`, so a handler only ever runs with a proven tenant.
+        //
+        // `route_layer`, not `layer`: `layer` would also wrap this router's fallback, so once merged
+        // every *unmatched* path (e.g. the generic CRUD paths this surface deliberately does not
+        // mount) would answer 401 instead of 404 — leaking "auth required" for routes that do not
+        // exist, and masking the CRUD-bypass probes.
+        .route_layer(from_fn_with_state(verifier, tenant_auth))
         .with_state(svc)
 }
 
 /// Mount the organization module with write paths locked to validated services.
 /// **Prefer this over `OrganizationModule::routes()` / `create_organization_routes` for any real
 /// deployment** — the latter expose unvalidated generic CRUD.
-pub fn create_guarded_organization_routes(m: &OrganizationModule) -> Router {
+///
+/// The composing service builds one [`TenantVerifier`] from its JWT secret and passes it here; the
+/// branch/department write surface derives `company_id` from the token, so no tenant crosses the
+/// wire in a body. `POST /companies/onboard` is exempt — it creates the tenant itself.
+pub fn create_guarded_organization_routes(
+    m: &OrganizationModule,
+    verifier: TenantVerifier,
+) -> Router {
     Router::new()
         // Company: read-only. Sole writer is onboarding (company + head-office branch, atomic).
         .merge(create_company_read_routes(m.company_service.clone()))
@@ -164,5 +201,5 @@ pub fn create_guarded_organization_routes(m: &OrganizationModule) -> Router {
         // Branch / Department: read + validated writes.
         .merge(create_branch_read_routes(m.branch_service.clone()))
         .merge(create_department_read_routes(m.department_service.clone()))
-        .merge(create_org_write_routes(m.org_write_service.clone()))
+        .merge(create_org_write_routes(m.org_write_service.clone(), verifier))
 }

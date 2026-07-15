@@ -6,6 +6,7 @@ the workspace Extension Contract (`docs/erp/extension-contract.md`).
 ## Composing into a service
 
 ```rust
+use backbone_auth::tenant::TenantVerifier;
 use backbone_organization::{OrganizationModule, create_guarded_organization_routes};
 
 let organization = OrganizationModule::builder()
@@ -14,8 +15,10 @@ let organization = OrganizationModule::builder()
 
 // RECOMMENDED for any real deployment: guarded composition.
 // - Company: read-only; the only writer is onboarding (POST /companies/onboard).
-// - Branch/Department: read + validated create/repoint (NPWP format, same-company parent/branch).
-let app = axum::Router::new().merge(create_guarded_organization_routes(&organization));
+// - Branch/Department: read + validated create/repoint (NPWP format, same-company parent/branch),
+//   behind a tenant guard: `company_id` is taken from the signed Bearer token, never the body.
+let verifier = TenantVerifier::hs256(jwt_secret.as_bytes());
+let app = axum::Router::new().merge(create_guarded_organization_routes(&organization, verifier));
 ```
 
 Three mounts exist, from safest to widest:
