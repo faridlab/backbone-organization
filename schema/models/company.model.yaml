@@ -2,8 +2,19 @@
 # Domain: Organization
 # Entity: Company
 # Description: Legal entity / books owner. Referenced by every module's `company_id`.
-# Multi-tenancy is schema-per-tenant → NO provider_id; a tenant schema may hold several
-# Companies (legal entities).
+#
+# TENANCY: `company_id` IS the tenant boundary. It is the only isolation this system
+# has — one database, one set of module schemas (`schema: selling`, `schema: sapiens`,
+# … are per-MODULE), and every tenant's rows share those tables. A row is reachable by
+# a caller only because its `company_id` matches the caller's signed claim; nothing
+# below the application separates tenants.
+#
+# This header previously read "multi-tenancy is schema-per-tenant → NO provider_id; a
+# tenant schema may hold several Companies". That described a design that was never
+# built: no code provisions a schema or database per tenant. The claim was load-bearing
+# in the wrong direction — engineers read it, concluded tenancy was handled beneath the
+# model, and left tenant-scoped entities with no tenant column at all (sapiens, party,
+# orders, bucket). Treat isolation as this column's job, and nothing else's.
 # =============================================================================
 
 models:
