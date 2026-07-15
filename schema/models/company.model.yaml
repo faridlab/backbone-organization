@@ -3,18 +3,23 @@
 # Entity: Company
 # Description: Legal entity / books owner. Referenced by every module's `company_id`.
 #
-# TENANCY: `company_id` IS the tenant boundary. It is the only isolation this system
-# has — one database, one set of module schemas (`schema: selling`, `schema: sapiens`,
-# … are per-MODULE), and every tenant's rows share those tables. A row is reachable by
-# a caller only because its `company_id` matches the caller's signed claim; nothing
-# below the application separates tenants.
+# SCOPE OF company_id: it partitions the BOOKS — which legal entity owns a document.
+# That much is certain: `parent_company_id` + `subsidiaries` + `is_default` below mean a
+# principal crosses this boundary routinely and legitimately (consolidated reporting,
+# intercompany postings), which is the opposite of how an isolation boundary behaves.
 #
-# This header previously read "multi-tenancy is schema-per-tenant → NO provider_id; a
-# tenant schema may hold several Companies". That described a design that was never
-# built: no code provisions a schema or database per tenant. The claim was load-bearing
-# in the wrong direction — engineers read it, concluded tenancy was handled beneath the
-# model, and left tenant-scoped entities with no tenant column at all (sapiens, party,
-# orders, bucket). Treat isolation as this column's job, and nothing else's.
+# THE ISOLATION BOUNDARY IS UNDECIDED. Do not infer it from this file. Two candidates are
+# encoded in the repo and contradict:
+#   - a tenant entity ABOVE Company (sapiens ships OrganizationUser/OrganizationRole/
+#     OrganizationPermission for it, but `Organization` itself does not exist in any model);
+#   - the DEPLOYMENT (ERPNext, whose data model this one follows, has no tenant entity at
+#     all — a Frappe site IS a database, so its `company` field is a books dimension, not a
+#     fence). Metaphor has no per-tenant schema/database provisioning today.
+#
+# Two earlier headers each asserted an answer and neither was earned: the original claimed
+# "multi-tenancy is schema-per-tenant" (a deployment that was never built here), and a
+# later edit claimed "company_id IS the tenant" (a decision that had not been made). Both
+# radiated into every regeneration. State only what is verified until an ADR settles it.
 # =============================================================================
 
 models:
