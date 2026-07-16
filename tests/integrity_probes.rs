@@ -14,7 +14,7 @@
 
 use axum::body::Body;
 use axum::http::{header, Request, StatusCode};
-use backbone_auth::tenant::TenantVerifier;
+use backbone_auth::company::CompanyVerifier;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde::Serialize;
 use sqlx::PgPool;
@@ -52,7 +52,7 @@ async fn module(pool: &PgPool) -> OrganizationModule {
 }
 
 fn app(m: &OrganizationModule) -> axum::Router {
-    create_guarded_organization_routes(m, TenantVerifier::hs256(SECRET))
+    create_guarded_organization_routes(m, CompanyVerifier::hs256(SECRET))
 }
 
 /// Send a request with an optional bearer token.
