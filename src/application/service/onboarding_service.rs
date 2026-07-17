@@ -4,8 +4,14 @@
 //! default (head-office) branch; doing it in one transaction avoids a half-created company.
 //! Also validates the Indonesian NPWP format. Proven by `tests/onboarding_golden_cases.rs`.
 
+use std::sync::Arc;
+
 use sqlx::PgPool;
 use uuid::Uuid;
+
+use crate::infrastructure::persistence::{
+    BranchRepository, CompanyRepository, NewCompanyRow, NewHeadOfficeBranchRow,
+};
 
 #[derive(Debug, Clone)]
 pub struct OnboardRequest {
@@ -97,11 +103,17 @@ pub fn validate_npwp(npwp: &str) -> bool {
 #[derive(Clone)]
 pub struct OnboardingService {
     db_pool: PgPool,
+    companies: Arc<CompanyRepository>,
+    branches: Arc<BranchRepository>,
 }
 
 impl OnboardingService {
     pub fn new(db_pool: PgPool) -> Self {
-        Self { db_pool }
+        Self {
+            companies: Arc::new(CompanyRepository::new(db_pool.clone())),
+            branches: Arc::new(BranchRepository::new(db_pool.clone())),
+            db_pool,
+        }
     }
 
     pub async fn onboard(&self, req: OnboardRequest) -> Result<OnboardResult, OnboardError> {
@@ -112,12 +124,10 @@ impl OnboardingService {
         }
 
         // Unique company code (fast pre-check; the partial unique index is the real arbiter).
-        let exists: Option<Uuid> = sqlx::query_scalar(
-            "SELECT id FROM organization.companies WHERE code=$1 AND (metadata->>'deleted_at') IS NULL",
-        )
-        .bind(&req.code)
-        .fetch_optional(&self.db_pool)
-        .await?;
+        let exists: Option<Uuid> = self
+            .companies
+            .find_live_id_by_code(&self.db_pool, &req.code)
+            .await?;
         if exists.is_some() {
             return Err(OnboardError::DuplicateCode(req.code.clone()));
         }
@@ -128,23 +138,24 @@ impl OnboardingService {
         let entity_type = req.entity_type.clone().unwrap_or_else(|| "pt".to_string());
         let base_currency = req.base_currency.clone().unwrap_or_else(|| "IDR".to_string());
 
-        let company_insert = sqlx::query(
-            r#"INSERT INTO organization.companies
-                (id, code, legal_name, trade_name, npwp, nib, entity_type, base_currency, email, phone, status)
-               VALUES ($1,$2,$3,$4,$5,$6,$7::company_entity_type,$8,$9,$10,'active'::company_status)"#,
-        )
-        .bind(company_id)
-        .bind(&req.code)
-        .bind(&req.legal_name)
-        .bind(&req.trade_name)
-        .bind(&req.npwp)
-        .bind(&req.nib)
-        .bind(&entity_type)
-        .bind(&base_currency)
-        .bind(&req.email)
-        .bind(&req.phone)
-        .execute(&mut *tx)
-        .await;
+        let company_insert = self
+            .companies
+            .insert_company_on(
+                &mut tx,
+                &NewCompanyRow {
+                    id: company_id,
+                    code: &req.code,
+                    legal_name: &req.legal_name,
+                    trade_name: req.trade_name.as_ref(),
+                    npwp: req.npwp.as_ref(),
+                    nib: req.nib.as_ref(),
+                    entity_type: &entity_type,
+                    base_currency: &base_currency,
+                    email: req.email.as_ref(),
+                    phone: req.phone.as_ref(),
+                },
+            )
+            .await;
 
         // A unique index rejects us if a concurrent onboard grabbed the code, or if the NPWP
         // is already registered to another company. Distinguish by constraint name.
@@ -168,17 +179,17 @@ impl OnboardingService {
         let hq_branch_id = Uuid::new_v4();
         let branch_code = req.hq_branch_code.clone().unwrap_or_else(|| "HQ".to_string());
         let branch_name = req.hq_branch_name.clone().unwrap_or_else(|| "Head Office".to_string());
-        sqlx::query(
-            r#"INSERT INTO organization.branches
-                (id, company_id, code, name, branch_type, is_head_office, status)
-               VALUES ($1,$2,$3,$4,'head_office'::branch_type,TRUE,'active'::org_status)"#,
-        )
-        .bind(hq_branch_id)
-        .bind(company_id)
-        .bind(&branch_code)
-        .bind(&branch_name)
-        .execute(&mut *tx)
-        .await?;
+        self.branches
+            .insert_head_office_on(
+                &mut tx,
+                &NewHeadOfficeBranchRow {
+                    id: hq_branch_id,
+                    company_id,
+                    code: &branch_code,
+                    name: &branch_name,
+                },
+            )
+            .await?;
 
         tx.commit().await?;
 

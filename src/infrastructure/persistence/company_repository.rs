@@ -57,4 +57,77 @@ impl CompanyRepository {
     }
 }
 
+/// The exact row the onboarding path writes for a new company.
+///
+/// Mirrors the raw column shape rather than the `Company` entity: `entity_type` binds as `&str` and
+/// is cast at the DB (`$7::company_entity_type`). The NPWP is expected already validated by the
+/// caller.
+pub struct NewCompanyRow<'a> {
+    pub id: Uuid,
+    pub code: &'a str,
+    pub legal_name: &'a str,
+    pub trade_name: Option<&'a String>,
+    pub npwp: Option<&'a String>,
+    pub nib: Option<&'a String>,
+    pub entity_type: &'a str,
+    pub base_currency: &'a str,
+    pub email: Option<&'a String>,
+    pub phone: Option<&'a String>,
+}
+
+/// Hand-written Company SQL for the onboarding unit of work.
+impl CompanyRepository {
+    /// Probe whether a live company already holds `code`. `Ok(None)` = the code is free.
+    ///
+    /// Deliberately UNSCOPED, unlike [`Self::find_live_id`]: company-code uniqueness is a
+    /// cross-company question asked before the company exists, so there is no company to fence to —
+    /// and binding an ambient scope here would hide a conflicting company and let the probe wrongly
+    /// report the code free. The partial unique index is the real arbiter; this is only a fast
+    /// pre-check.
+    pub async fn find_live_id_by_code(
+        &self,
+        pool: &PgPool,
+        code: &str,
+    ) -> Result<Option<Uuid>, sqlx::Error> {
+        sqlx::query_scalar(
+            "SELECT id FROM organization.companies WHERE code=$1 AND (metadata->>'deleted_at') IS NULL",
+        )
+        .bind(code)
+        .fetch_optional(pool)
+        .await
+    }
+
+    /// Create a company.
+    ///
+    /// Takes the CALLER'S connection so the company and its head-office branch commit as one unit.
+    /// Not scoped: the company being written IS the scope, and it does not exist yet.
+    ///
+    /// **Leaks `sqlx::Error` deliberately** — the caller discriminates on `is_unique_violation()`
+    /// and on the violated constraint's name to tell a duplicate code from a duplicate NPWP.
+    pub async fn insert_company_on(
+        &self,
+        conn: &mut sqlx::PgConnection,
+        c: &NewCompanyRow<'_>,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"INSERT INTO organization.companies
+                (id, code, legal_name, trade_name, npwp, nib, entity_type, base_currency, email, phone, status)
+               VALUES ($1,$2,$3,$4,$5,$6,$7::company_entity_type,$8,$9,$10,'active'::company_status)"#,
+        )
+        .bind(c.id)
+        .bind(c.code)
+        .bind(c.legal_name)
+        .bind(c.trade_name)
+        .bind(c.npwp)
+        .bind(c.nib)
+        .bind(c.entity_type)
+        .bind(c.base_currency)
+        .bind(c.email)
+        .bind(c.phone)
+        .execute(conn)
+        .await?;
+        Ok(())
+    }
+}
+
 backbone_core::impl_crud_repository!(CompanyRepository, Company, soft_delete);

@@ -28,6 +28,7 @@ pub use backbone_orm::repository::{
 // <<< CUSTOM
 // The hand-written validated-write SQL's parameter types (see the three repositories, all declared
 // `user_owned` in metaphor.codegen.yaml).
-pub use branch_repository::NewBranchRow;
+pub use branch_repository::{NewBranchRow, NewHeadOfficeBranchRow};
+pub use company_repository::NewCompanyRow;
 pub use department_repository::NewDepartmentRow;
 // END CUSTOM

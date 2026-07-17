@@ -113,4 +113,44 @@ impl BranchRepository {
     }
 }
 
+/// The exact row the onboarding path writes for a new company's head-office branch.
+///
+/// A deliberately narrower column set than [`NewBranchRow`]: onboarding only knows the code and
+/// name, and the statement must stay verbatim rather than bind NULLs into columns it never named.
+pub struct NewHeadOfficeBranchRow<'a> {
+    pub id: Uuid,
+    pub company_id: Uuid,
+    pub code: &'a str,
+    pub name: &'a str,
+}
+
+/// Hand-written Branch SQL for the onboarding unit of work.
+impl BranchRepository {
+    /// Create the head-office branch for a company being onboarded.
+    ///
+    /// Takes the CALLER'S connection: this must commit as one unit with the company INSERT that
+    /// precedes it, or a failure here would leave a company with no branch. Unlike
+    /// [`Self::insert_branch`], it does NOT scope — the caller's transaction is already the unit of
+    /// work, and the company it writes under is being created in that same uncommitted transaction,
+    /// so there is no established company scope to bind to.
+    pub async fn insert_head_office_on(
+        &self,
+        conn: &mut sqlx::PgConnection,
+        b: &NewHeadOfficeBranchRow<'_>,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"INSERT INTO organization.branches
+                (id, company_id, code, name, branch_type, is_head_office, status)
+               VALUES ($1,$2,$3,$4,'head_office'::branch_type,TRUE,'active'::org_status)"#,
+        )
+        .bind(b.id)
+        .bind(b.company_id)
+        .bind(b.code)
+        .bind(b.name)
+        .execute(conn)
+        .await?;
+        Ok(())
+    }
+}
+
 backbone_core::impl_crud_repository!(BranchRepository, Branch, soft_delete);
