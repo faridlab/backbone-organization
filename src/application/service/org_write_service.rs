@@ -13,6 +13,10 @@ use backbone_orm::company_scope;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::infrastructure::persistence::{
+    BranchRepository, CompanyRepository, DepartmentRepository, NewBranchRow, NewDepartmentRow,
+};
+
 use super::onboarding_service::validate_npwp;
 
 #[derive(Debug)]
@@ -90,25 +94,34 @@ pub struct NewDepartment {
     pub manager_id: Option<Uuid>,
 }
 
-#[derive(Clone)]
 pub struct OrgWriteService {
     db_pool: PgPool,
+    companies: CompanyRepository,
+    branches: BranchRepository,
+    departments: DepartmentRepository,
+}
+
+/// The repositories are pool handles, so a clone is just a re-wire off the same cloned pool — this
+/// stays as cheap as the `#[derive(Clone)]` it replaces (the repo newtypes are not themselves `Clone`).
+impl Clone for OrgWriteService {
+    fn clone(&self) -> Self {
+        Self::new(self.db_pool.clone())
+    }
 }
 
 impl OrgWriteService {
     pub fn new(db_pool: PgPool) -> Self {
-        Self { db_pool }
+        let companies = CompanyRepository::new(db_pool.clone());
+        let branches = BranchRepository::new(db_pool.clone());
+        let departments = DepartmentRepository::new(db_pool.clone());
+        Self { db_pool, companies, branches, departments }
     }
 
     async fn company_exists(&self, id: Uuid) -> Result<bool, OrgWriteError> {
         // RLS scope (ADR-0008): the id being probed IS the company — fence the probe to it.
-        let exists_q = sqlx::query_scalar(
-            "SELECT id FROM organization.companies WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
-        )
-        .bind(id);
-        let found: Option<Uuid> = company_scope::with_company_scope(
+        let found = company_scope::with_company_scope(
             Some(id),
-            company_scope::fetch_optional_scalar_scoped(&self.db_pool, exists_q),
+            self.companies.find_live_id(&self.db_pool, id),
         ).await?;
         Ok(found.is_some())
     }
@@ -126,24 +139,20 @@ impl OrgWriteService {
         let branch_type = b.branch_type.clone().unwrap_or_else(|| "branch".to_string());
         // RLS scope (ADR-0008), DTO-company pattern: the company is on the DTO — the INSERT's WITH
         // CHECK needs `app.company_id` bound or it is rejected under the app role.
-        let insert_q = sqlx::query(
-            r#"INSERT INTO organization.branches
-                (id, company_id, code, name, branch_type, is_head_office, npwp, email, phone, address, status)
-               VALUES ($1,$2,$3,$4,$5::branch_type,$6,$7,$8,$9,$10,'active'::org_status)"#,
-        )
-        .bind(id)
-        .bind(b.company_id)
-        .bind(&b.code)
-        .bind(&b.name)
-        .bind(&branch_type)
-        .bind(b.is_head_office)
-        .bind(&b.npwp)
-        .bind(&b.email)
-        .bind(&b.phone)
-        .bind(&b.address);
         company_scope::with_company_scope(
             Some(b.company_id),
-            company_scope::execute_scoped(&self.db_pool, insert_q),
+            self.branches.insert_branch(&self.db_pool, &NewBranchRow {
+                id,
+                company_id: b.company_id,
+                code: &b.code,
+                name: &b.name,
+                branch_type: &branch_type,
+                is_head_office: b.is_head_office,
+                npwp: b.npwp.as_ref(),
+                email: b.email.as_ref(),
+                phone: b.phone.as_ref(),
+                address: b.address.as_ref(),
+            }),
         ).await?;
         Ok(id)
     }
@@ -162,13 +171,9 @@ impl OrgWriteService {
             }
             // RLS scope (ADR-0008), param-company pattern: fence the link probe to the caller's
             // company. The explicit `c != company_id` check below stays as defense-in-depth.
-            let parent_q = sqlx::query_scalar(
-                "SELECT company_id FROM organization.departments WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
-            )
-            .bind(pid);
-            let owner: Option<Uuid> = company_scope::with_company_scope(
+            let owner = company_scope::with_company_scope(
                 Some(company_id),
-                company_scope::fetch_optional_scalar_scoped(&self.db_pool, parent_q),
+                self.departments.find_owner_company(&self.db_pool, pid),
             ).await?;
             match owner {
                 None => return Err(OrgWriteError::ParentNotFound(pid)),
@@ -177,13 +182,9 @@ impl OrgWriteService {
             }
         }
         if let Some(bid) = branch_id {
-            let branch_q = sqlx::query_scalar(
-                "SELECT company_id FROM organization.branches WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
-            )
-            .bind(bid);
-            let owner: Option<Uuid> = company_scope::with_company_scope(
+            let owner = company_scope::with_company_scope(
                 Some(company_id),
-                company_scope::fetch_optional_scalar_scoped(&self.db_pool, branch_q),
+                self.branches.find_owner_company(&self.db_pool, bid),
             ).await?;
             match owner {
                 None => return Err(OrgWriteError::BranchNotFound(bid)),
@@ -203,22 +204,18 @@ impl OrgWriteService {
         let id = Uuid::new_v4();
         // RLS scope (ADR-0008), DTO-company pattern: bind the DTO's company so the INSERT's WITH CHECK
         // passes under the app role.
-        let insert_q = sqlx::query(
-            r#"INSERT INTO organization.departments
-                (id, company_id, code, name, parent_id, branch_id, is_group, manager_id, status)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'active'::org_status)"#,
-        )
-        .bind(id)
-        .bind(d.company_id)
-        .bind(&d.code)
-        .bind(&d.name)
-        .bind(d.parent_id)
-        .bind(d.branch_id)
-        .bind(d.is_group)
-        .bind(d.manager_id);
         company_scope::with_company_scope(
             Some(d.company_id),
-            company_scope::execute_scoped(&self.db_pool, insert_q),
+            self.departments.insert_department(&self.db_pool, &NewDepartmentRow {
+                id,
+                company_id: d.company_id,
+                code: &d.code,
+                name: &d.name,
+                parent_id: d.parent_id,
+                branch_id: d.branch_id,
+                is_group: d.is_group,
+                manager_id: d.manager_id,
+            }),
         ).await?;
         Ok(id)
     }
@@ -236,23 +233,13 @@ impl OrgWriteService {
         // argument. This read rides the REQUEST-dedicated connection (established by `company_auth`),
         // whose `app.company_id` fences it, so another company's department isn't found. Having read
         // the owning company, we fence the update to it explicitly below.
-        let owner_q = sqlx::query_scalar(
-            "SELECT company_id FROM organization.departments WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
-        )
-        .bind(id);
-        let company_id: Option<Uuid> =
-            company_scope::fetch_optional_scalar_scoped(&self.db_pool, owner_q).await?;
+        let company_id = self.departments.find_owner_company(&self.db_pool, id).await?;
         let company_id = company_id.ok_or(OrgWriteError::ParentNotFound(id))?;
         self.validate_dept_links(company_id, parent_id, branch_id, Some(id))
             .await?;
-        let update_q =
-            sqlx::query("UPDATE organization.departments SET parent_id=$2, branch_id=$3 WHERE id=$1")
-                .bind(id)
-                .bind(parent_id)
-                .bind(branch_id);
         company_scope::with_company_scope(
             Some(company_id),
-            company_scope::execute_scoped(&self.db_pool, update_q),
+            self.departments.repoint(&self.db_pool, id, parent_id, branch_id),
         ).await?;
         Ok(())
     }
