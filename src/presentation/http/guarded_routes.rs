@@ -24,15 +24,16 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Request, State},
     http::StatusCode,
-    middleware::from_fn_with_state,
-    response::IntoResponse,
+    middleware::{from_fn_with_state, Next},
+    response::{IntoResponse, Response},
     routing::post,
     Json, Router,
 };
 use backbone_auth::company::{company_auth, CompanyContext, CompanyVerifier};
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::application::service::org_write_service::{NewBranch, NewDepartment, OrgWriteError, OrgWriteService};
@@ -183,6 +184,47 @@ fn create_org_write_routes(svc: Arc<OrgWriteService>, verifier: CompanyVerifier)
         .with_state(svc)
 }
 
+/// Tenant-existence guard: reject (401) when the caller's proven `company_id` is not a real
+/// `organization.companies` row.
+///
+/// RLS already fences a non-existent company to empty reads (no cross-tenant leak) — this guard
+/// adds an explicit 401 so the caller learns *why* (unknown tenant) instead of seeing empty data,
+/// and so a write surface can fail fast before any handler runs.
+///
+/// **Must be mounted INNER to [`company_auth`]** (i.e. `company_auth` is the outer layer, applied
+/// last via `.route_layer`): [`company_auth`] is what inserts the [`CompanyContext`] this reads and
+/// — when the app supplies its pool — what binds the request company scope via
+/// [`backbone_orm::company_scope::with_request_scope`]. The existence query uses
+/// [`backbone_orm::company_scope::fetch_optional_scalar_scoped`], which prefers the request's
+/// scoped connection; under that scope `EXISTS(... id = $1)` is RLS-fenced to the caller's own
+/// company, so it resolves to `true` iff that company row exists. Outside the request scope (no
+/// pool / pre-scope) it fails closed.
+pub async fn require_known_company(State(pool): State<PgPool>, req: Request, next: Next) -> Response {
+    let Some(ctx) = req.extensions().get::<CompanyContext>().cloned() else {
+        return unknown_company("no company principal — mount inner to company_auth");
+    };
+    let exists = backbone_orm::company_scope::fetch_optional_scalar_scoped(
+        &pool,
+        sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM organization.companies WHERE id = $1)",
+        )
+        .bind(ctx.company_id),
+    )
+    .await;
+    match exists {
+        Ok(Some(true)) => next.run(req).await,
+        _ => unknown_company("token company_id is not a registered company"),
+    }
+}
+
+fn unknown_company(message: &str) -> Response {
+    (
+        StatusCode::UNAUTHORIZED,
+        Json(serde_json::json!({ "error": "unauthorized", "message": message })),
+    )
+        .into_response()
+}
+
 /// Mount the organization module with write paths locked to validated services.
 /// **Prefer this over `OrganizationModule::routes()` / `create_organization_routes` for any real
 /// deployment** — the latter expose unvalidated generic CRUD.
@@ -202,4 +244,33 @@ pub fn create_guarded_organization_routes(
         .merge(create_branch_read_routes(m.branch_service.clone()))
         .merge(create_department_read_routes(m.department_service.clone()))
         .merge(create_org_write_routes(m.org_write_service.clone(), verifier))
+}
+
+/// Like [`create_guarded_organization_routes`] but additionally requires the caller's token
+/// `company_id` to resolve to a real `organization.companies` row (else 401).
+///
+/// The existence check runs inner to `company_auth` on the validated write surface, so it sees the
+/// request company scope `company_auth` binds. RLS already fences an unknown company to empty
+/// reads — this adds an explicit, fail-fast 401. Pass the same pool the app registers as a
+/// `PgPool` extension (the one `company_auth` upgrades to a request-dedicated scope).
+pub fn create_guarded_organization_routes_checked(
+    m: &OrganizationModule,
+    verifier: CompanyVerifier,
+    pool: PgPool,
+) -> Router {
+    let writes = Router::new()
+        .route("/branches", post(create_branch))
+        .route("/departments", post(create_department))
+        .route("/departments/{id}/repoint", post(repoint_department))
+        // `company_auth` (outer, applied last) binds the scope + inserts CompanyContext;
+        // `require_known_company` (inner) then reads it and checks existence under that scope.
+        .route_layer(from_fn_with_state(pool.clone(), require_known_company))
+        .route_layer(from_fn_with_state(verifier, company_auth))
+        .with_state(m.org_write_service.clone());
+    Router::new()
+        .merge(create_company_read_routes(m.company_service.clone()))
+        .merge(create_onboarding_routes(m.onboarding_service.clone()))
+        .merge(create_branch_read_routes(m.branch_service.clone()))
+        .merge(create_department_read_routes(m.department_service.clone()))
+        .merge(writes)
 }
