@@ -20,5 +20,5 @@ pub use company_handler::{create_company_routes, create_company_read_routes, cre
 pub use department_handler::{create_department_routes, create_department_read_routes, create_department_write_routes};
 // <<< CUSTOM
 pub use onboarding_handler::{create_onboarding_routes, create_organization_routes};
-pub use guarded_routes::create_guarded_organization_routes;
+pub use guarded_routes::{create_guarded_organization_routes, create_guarded_organization_routes_checked, require_known_company};
 // END CUSTOM
