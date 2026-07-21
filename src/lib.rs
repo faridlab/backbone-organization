@@ -41,7 +41,8 @@ pub use application::service::{
     OnboardingService, OrgWriteError, OrgWriteService,
 };
 pub use presentation::http::{
-    create_guarded_organization_routes, create_onboarding_routes, create_organization_routes,
+    create_guarded_organization_routes, create_guarded_organization_routes_checked,
+    create_onboarding_routes, create_organization_routes, require_known_company,
 };
 // END CUSTOM
 // Re-exports - Workflows
