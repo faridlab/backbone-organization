@@ -21,3 +21,6 @@ Thumbs.db
 # Logs
 *.log
 .claude/
+
+# graphify knowledge graph (local only)
+graphify-out/
