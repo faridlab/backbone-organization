@@ -63,6 +63,33 @@ CREATE TRIGGER companies_update_audit BEFORE UPDATE ON organization.companies
     FOR EACH ROW EXECUTE FUNCTION organization.companies_audit_timestamp();
 
 -- ==============================================================================
+-- Table: CompanyIndustry (organization.company_industries)
+-- ==============================================================================
+
+-- Function to set metadata timestamps
+CREATE OR REPLACE FUNCTION organization.company_industries_audit_timestamp() RETURNS trigger AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        NEW.metadata = jsonb_set(NEW.metadata::jsonb, '{created_at}', to_jsonb(NOW()));
+        NEW.metadata = jsonb_set(NEW.metadata::jsonb, '{updated_at}', to_jsonb(NOW()));
+    ELSIF TG_OP = 'UPDATE' THEN
+        NEW.metadata = jsonb_set(NEW.metadata::jsonb, '{updated_at}', to_jsonb(NOW()));
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to set timestamps on INSERT
+DROP TRIGGER IF EXISTS company_industries_insert_audit ON organization.company_industries;
+CREATE TRIGGER company_industries_insert_audit BEFORE INSERT ON organization.company_industries
+    FOR EACH ROW EXECUTE FUNCTION organization.company_industries_audit_timestamp();
+
+-- Trigger to set updated_at on UPDATE
+DROP TRIGGER IF EXISTS company_industries_update_audit ON organization.company_industries;
+CREATE TRIGGER company_industries_update_audit BEFORE UPDATE ON organization.company_industries
+    FOR EACH ROW EXECUTE FUNCTION organization.company_industries_audit_timestamp();
+
+-- ==============================================================================
 -- Table: Department (organization.departments)
 -- ==============================================================================
 
@@ -88,4 +115,31 @@ CREATE TRIGGER departments_insert_audit BEFORE INSERT ON organization.department
 DROP TRIGGER IF EXISTS departments_update_audit ON organization.departments;
 CREATE TRIGGER departments_update_audit BEFORE UPDATE ON organization.departments
     FOR EACH ROW EXECUTE FUNCTION organization.departments_audit_timestamp();
+
+-- ==============================================================================
+-- Table: Industry (organization.industries)
+-- ==============================================================================
+
+-- Function to set metadata timestamps
+CREATE OR REPLACE FUNCTION organization.industries_audit_timestamp() RETURNS trigger AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        NEW.metadata = jsonb_set(NEW.metadata::jsonb, '{created_at}', to_jsonb(NOW()));
+        NEW.metadata = jsonb_set(NEW.metadata::jsonb, '{updated_at}', to_jsonb(NOW()));
+    ELSIF TG_OP = 'UPDATE' THEN
+        NEW.metadata = jsonb_set(NEW.metadata::jsonb, '{updated_at}', to_jsonb(NOW()));
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to set timestamps on INSERT
+DROP TRIGGER IF EXISTS industries_insert_audit ON organization.industries;
+CREATE TRIGGER industries_insert_audit BEFORE INSERT ON organization.industries
+    FOR EACH ROW EXECUTE FUNCTION organization.industries_audit_timestamp();
+
+-- Trigger to set updated_at on UPDATE
+DROP TRIGGER IF EXISTS industries_update_audit ON organization.industries;
+CREATE TRIGGER industries_update_audit BEFORE UPDATE ON organization.industries
+    FOR EACH ROW EXECUTE FUNCTION organization.industries_audit_timestamp();
 

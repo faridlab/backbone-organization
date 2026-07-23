@@ -8,7 +8,9 @@ pub use backbone_core::{Specification, AndSpecification, OrSpecification, NotSpe
 
 pub mod branch_specification;
 pub mod company_specification;
+pub mod company_industry_specification;
 pub mod department_specification;
+pub mod industry_specification;
 
 // <<< CUSTOM
 // END CUSTOM

@@ -22,7 +22,6 @@ config:
       - graphql
       - grpc
       - proto
-      - openapi
 
 # Reuse sapiens for user identity (managers, actors) — logical refs, no DB constraint.
 external_imports:
@@ -64,3 +63,5 @@ imports:
   - company.model.yaml
   - branch.model.yaml
   - department.model.yaml
+  - industry.model.yaml
+  - company_industry.model.yaml

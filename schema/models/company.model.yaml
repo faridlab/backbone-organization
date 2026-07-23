@@ -3,23 +3,16 @@
 # Entity: Company
 # Description: Legal entity / books owner. Referenced by every module's `company_id`.
 #
-# SCOPE OF company_id: it partitions the BOOKS — which legal entity owns a document.
-# That much is certain: `parent_company_id` + `subsidiaries` + `is_default` below mean a
-# principal crosses this boundary routinely and legitimately (consolidated reporting,
-# intercompany postings), which is the opposite of how an isolation boundary behaves.
-#
-# THE ISOLATION BOUNDARY IS UNDECIDED. Do not infer it from this file. Two candidates are
-# encoded in the repo and contradict:
-#   - a tenant entity ABOVE Company (sapiens ships OrganizationUser/OrganizationRole/
-#     OrganizationPermission for it, but `Organization` itself does not exist in any model);
-#   - the DEPLOYMENT (ERPNext, whose data model this one follows, has no tenant entity at
-#     all — a Frappe site IS a database, so its `company` field is a books dimension, not a
-#     fence). Metaphor has no per-tenant schema/database provisioning today.
-#
-# Two earlier headers each asserted an answer and neither was earned: the original claimed
-# "multi-tenancy is schema-per-tenant" (a deployment that was never built here), and a
-# later edit claimed "company_id IS the tenant" (a decision that had not been made). Both
-# radiated into every regeneration. State only what is verified until an ADR settles it.
+# TENANT ISOLATION BOUNDARY — SETTLED (see ADR-001 §3 and ADR-003):
+#   - The tenant fence is schema-per-tenant at the DB layer, enforced by RLS at the app
+#     role. There is NO tenant_id/provider_id column in this module.
+#   - `company_id` is NOT a tenant. It partitions the BOOKS — which legal entity owns a
+#     document. `parent_company_id` + `subsidiaries` + `is_default` below mean a principal
+#     crosses this boundary routinely and legitimately (consolidated reporting, intercompany
+#     postings), which is the opposite of how an isolation fence behaves.
+#   - The sapiens tenant-entity candidates (OrganizationUser/OrganizationRole/
+#     OrganizationPermission) are an auth/RBAC concern owned by sapiens, not modeled here.
+# Do not re-litigate either boundary in this file; supersede the ADRs instead.
 # =============================================================================
 
 models:
@@ -161,6 +154,14 @@ models:
         type: Department[]
         attributes: ["@one_to_many"]
         description: "Departments of this company"
+        inverse: company
+
+      # M:N classification via the CompanyIndustry junction (no @many_to_many in the DSL).
+      # Descriptive only — NOT part of the books-owner contract (ADR-003 §2).
+      company_industries:
+        type: CompanyIndustry[]
+        attributes: ["@one_to_many"]
+        description: "KBLI 2020 industry classifications (multiple; one may be primary)"
         inverse: company
 
     indexes:

@@ -11,20 +11,26 @@ use std::sync::Arc;
 use super::{
     branch_handler::create_branch_routes,
     company_handler::create_company_routes,
+    company_industry_handler::create_company_industry_routes,
     department_handler::create_department_routes,
+    industry_handler::create_industry_routes,
 };
 
 use crate::application::service::{
     BranchService,
     CompanyService,
+    CompanyIndustryService,
     DepartmentService,
+    IndustryService,
 };
 
 /// Services collection for all CRUD endpoints
 pub struct HttpServices {
     pub branch: Arc<BranchService>,
     pub company: Arc<CompanyService>,
+    pub company_industry: Arc<CompanyIndustryService>,
     pub department: Arc<DepartmentService>,
+    pub industry: Arc<IndustryService>,
 }
 
 /// Configure all HTTP routes for this module using Axum and BackboneCrudHandler.
@@ -48,8 +54,12 @@ pub fn configure_routes(services: HttpServices) -> Router {
         .merge(create_branch_routes(services.branch))
         // Company routes (12 Backbone endpoints)
         .merge(create_company_routes(services.company))
+        // CompanyIndustry routes (12 Backbone endpoints)
+        .merge(create_company_industry_routes(services.company_industry))
         // Department routes (12 Backbone endpoints)
         .merge(create_department_routes(services.department))
+        // Industry routes (12 Backbone endpoints)
+        .merge(create_industry_routes(services.industry))
 }
 
 /// Create an individual entity's routes (for modular configuration)
@@ -64,8 +74,16 @@ pub mod individual {
         create_company_routes(service)
     }
 
+    pub fn company_industry_routes(service: Arc<CompanyIndustryService>) -> Router {
+        create_company_industry_routes(service)
+    }
+
     pub fn department_routes(service: Arc<DepartmentService>) -> Router {
         create_department_routes(service)
+    }
+
+    pub fn industry_routes(service: Arc<IndustryService>) -> Router {
+        create_industry_routes(service)
     }
 
 }

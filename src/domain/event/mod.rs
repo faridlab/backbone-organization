@@ -6,15 +6,23 @@ pub mod branch_events;
 pub mod branch_event_handlers;
 pub mod company_events;
 pub mod company_event_handlers;
+pub mod company_industry_events;
+pub mod company_industry_event_handlers;
 pub mod department_events;
 pub mod department_event_handlers;
+pub mod industry_events;
+pub mod industry_event_handlers;
 
 pub use branch_events::{BranchEvent, BranchEventPublisher, NoopBranchEventPublisher};
 pub use branch_event_handlers::BranchEventHandler;
 pub use company_events::{CompanyEvent, CompanyEventPublisher, NoopCompanyEventPublisher};
 pub use company_event_handlers::CompanyEventHandler;
+pub use company_industry_events::{CompanyIndustryEvent, CompanyIndustryEventPublisher, NoopCompanyIndustryEventPublisher};
+pub use company_industry_event_handlers::CompanyIndustryEventHandler;
 pub use department_events::{DepartmentEvent, DepartmentEventPublisher, NoopDepartmentEventPublisher};
 pub use department_event_handlers::DepartmentEventHandler;
+pub use industry_events::{IndustryEvent, IndustryEventPublisher, NoopIndustryEventPublisher};
+pub use industry_event_handlers::IndustryEventHandler;
 
 // <<< CUSTOM
 // END CUSTOM

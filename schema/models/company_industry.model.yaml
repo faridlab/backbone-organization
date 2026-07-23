@@ -1,0 +1,68 @@
+# =============================================================================
+# Domain: Organization
+# Entity: CompanyIndustry
+# Description: M:N link between Company and Industry (KBLI 2020). A company may
+# operate in multiple business fields — a single NIB can declare multiple KBLI
+# codes — so the link is many-to-many. `is_primary` marks the main activity;
+# a partial unique index enforces at-most-one primary per company.
+#
+# Descriptive classification only — NOT part of the books-owner contract
+# (ADR-003 §2). The DSL has no @many_to_many, so this junction is a first-class
+# entity and gets full generated CRUD + its own audit metadata.
+# =============================================================================
+
+models:
+  - name: CompanyIndustry
+    collection: company_industries
+    description: "M:N link Company<->Industry (KBLI 2020) with a primary flag"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique link identifier"
+
+      company_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Company.id)"]
+        description: "Owning company"
+
+      industry_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Industry.id)"]
+        description: "Linked KBLI 2020 industry"
+
+      is_primary:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "The company's main business activity (at most one per company)"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      company:
+        type: Company
+        attributes: ["@one", "@foreign_key(company_id)"]
+        description: "Owning company"
+        inverse: company_industries
+
+      industry:
+        type: Industry
+        attributes: ["@one", "@foreign_key(industry_id)"]
+        description: "Linked industry"
+        inverse: company_industries
+
+    indexes:
+      # A company links a given industry at most once.
+      - type: unique
+        fields: [company_id, industry_id]
+        where: "deleted_at IS NULL"
+      # At most one primary industry per company (zero allowed — not-yet-designated).
+      - type: unique
+        fields: [company_id]
+        where: "is_primary = true AND deleted_at IS NULL"
+      - type: index
+        fields: [company_id, is_primary]

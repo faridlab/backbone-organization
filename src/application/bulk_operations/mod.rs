@@ -7,11 +7,15 @@ pub use shared_types::*;
 
 pub mod branch_bulk;
 pub mod company_bulk;
+pub mod company_industry_bulk;
 pub mod department_bulk;
+pub mod industry_bulk;
 
 pub use branch_bulk::BranchBulkService;
 pub use company_bulk::CompanyBulkService;
+pub use company_industry_bulk::CompanyIndustryBulkService;
 pub use department_bulk::DepartmentBulkService;
+pub use industry_bulk::IndustryBulkService;
 
 // <<< CUSTOM
 // END CUSTOM

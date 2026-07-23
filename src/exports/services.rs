@@ -41,6 +41,15 @@ pub trait OrganizationQueryService: Send + Sync {
     /// Check if Company exists
     async fn company_exists(&self, id: CompanyId) -> Result<bool>;
 
+    /// Get CompanyIndustry by ID
+    async fn get_company_industry(&self, id: CompanyIndustryId) -> Result<Option<CompanyIndustryDto>>;
+
+    /// Get CompanyIndustry summary by ID
+    async fn get_company_industry_summary(&self, id: CompanyIndustryId) -> Result<Option<CompanyIndustrySummary>>;
+
+    /// Check if CompanyIndustry exists
+    async fn company_industry_exists(&self, id: CompanyIndustryId) -> Result<bool>;
+
     /// Get Department by ID
     async fn get_department(&self, id: DepartmentId) -> Result<Option<DepartmentDto>>;
 
@@ -49,6 +58,15 @@ pub trait OrganizationQueryService: Send + Sync {
 
     /// Check if Department exists
     async fn department_exists(&self, id: DepartmentId) -> Result<bool>;
+
+    /// Get Industry by ID
+    async fn get_industry(&self, id: IndustryId) -> Result<Option<IndustryDto>>;
+
+    /// Get Industry summary by ID
+    async fn get_industry_summary(&self, id: IndustryId) -> Result<Option<IndustrySummary>>;
+
+    /// Check if Industry exists
+    async fn industry_exists(&self, id: IndustryId) -> Result<bool>;
 
 }
 

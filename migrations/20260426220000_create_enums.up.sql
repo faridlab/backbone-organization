@@ -37,3 +37,12 @@ BEGIN
 END
 $$;
 
+-- Create kbli_sector enum type
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'kbli_sector') THEN
+        CREATE TYPE kbli_sector AS ENUM ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u');
+    END IF;
+END
+$$;
+

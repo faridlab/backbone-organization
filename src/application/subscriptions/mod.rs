@@ -13,4 +13,6 @@ pub use registry::SubscriptionRegistry;
 
 pub use handlers::BranchEventSubscriber;
 pub use handlers::CompanyEventSubscriber;
+pub use handlers::CompanyIndustryEventSubscriber;
 pub use handlers::DepartmentEventSubscriber;
+pub use handlers::IndustryEventSubscriber;

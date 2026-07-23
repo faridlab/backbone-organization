@@ -4,11 +4,14 @@
 
 pub mod branch;
 pub mod company;
+pub mod company_industry;
 pub mod department;
+pub mod industry;
 pub mod branch_type;
 pub mod org_status;
 pub mod company_entity_type;
 pub mod company_status;
+pub mod kbli_sector;
 
 // Re-exports
 pub use branch::Branch;
@@ -17,13 +20,20 @@ pub use branch::BranchId;
 pub use company::Company;
 pub use company::CompanyBuilder;
 pub use company::CompanyId;
+pub use company_industry::CompanyIndustry;
+pub use company_industry::CompanyIndustryBuilder;
+pub use company_industry::CompanyIndustryId;
 pub use department::Department;
 pub use department::DepartmentBuilder;
 pub use department::DepartmentId;
+pub use industry::Industry;
+pub use industry::IndustryBuilder;
+pub use industry::IndustryId;
 pub use branch_type::BranchType;
 pub use org_status::OrgStatus;
 pub use company_entity_type::CompanyEntityType;
 pub use company_status::CompanyStatus;
+pub use kbli_sector::KBLISector;
 
 // ==========================================================================
 // Entity Trait

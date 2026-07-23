@@ -9,7 +9,9 @@ pub use base::{UseCaseError, UseCaseResult, UseCaseHooks};
 
 pub mod branch_usecases;
 pub mod company_usecases;
+pub mod company_industry_usecases;
 pub mod department_usecases;
+pub mod industry_usecases;
 
 pub use branch_usecases::{
     CreateBranchUseCase, UpdateBranchUseCase, GetBranchUseCase,
@@ -19,9 +21,17 @@ pub use company_usecases::{
     CreateCompanyUseCase, UpdateCompanyUseCase, GetCompanyUseCase,
     DeleteCompanyUseCase, ListCompanyUseCase,
 };
+pub use company_industry_usecases::{
+    CreateCompanyIndustryUseCase, UpdateCompanyIndustryUseCase, GetCompanyIndustryUseCase,
+    DeleteCompanyIndustryUseCase, ListCompanyIndustryUseCase,
+};
 pub use department_usecases::{
     CreateDepartmentUseCase, UpdateDepartmentUseCase, GetDepartmentUseCase,
     DeleteDepartmentUseCase, ListDepartmentUseCase,
+};
+pub use industry_usecases::{
+    CreateIndustryUseCase, UpdateIndustryUseCase, GetIndustryUseCase,
+    DeleteIndustryUseCase, ListIndustryUseCase,
 };
 
 // <<< CUSTOM

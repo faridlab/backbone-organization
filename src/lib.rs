@@ -33,7 +33,9 @@ pub use infrastructure::persistence::*;
 // Re-exports - Application services
 pub use application::service::BranchService;
 pub use application::service::CompanyService;
+pub use application::service::CompanyIndustryService;
 pub use application::service::DepartmentService;
+pub use application::service::IndustryService;
 
 // <<< CUSTOM
 pub use application::service::{
@@ -67,7 +69,9 @@ use sqlx::PgPool;
 pub struct OrganizationModule {
     pub branch_service: Arc<BranchService>,
     pub company_service: Arc<CompanyService>,
+    pub company_industry_service: Arc<CompanyIndustryService>,
     pub department_service: Arc<DepartmentService>,
+    pub industry_service: Arc<IndustryService>,
     // <<< CUSTOM
     /// Atomic company onboarding (Company + head-office Branch in one transaction).
     pub onboarding_service: Arc<OnboardingService>,
@@ -91,13 +95,17 @@ impl OrganizationModule {
         use presentation::http::{
             create_branch_routes,
             create_company_routes,
+            create_company_industry_routes,
             create_department_routes,
+            create_industry_routes,
         };
 
         Router::new()
             .merge(create_branch_routes(self.branch_service.clone()))
             .merge(create_company_routes(self.company_service.clone()))
+            .merge(create_company_industry_routes(self.company_industry_service.clone()))
             .merge(create_department_routes(self.department_service.clone()))
+            .merge(create_industry_routes(self.industry_service.clone()))
     }
 
     /// Deprecated alias for [`Self::all_crud_routes`]. `routes()` reads like
@@ -146,9 +154,17 @@ impl OrganizationModuleBuilder {
         let company_repository = Arc::new(CompanyRepository::new(db_pool.clone()));
         let company_service = Arc::new(CompanyService::with_repository(company_repository.clone()));
 
+        // CompanyIndustry service
+        let company_industry_repository = Arc::new(CompanyIndustryRepository::new(db_pool.clone()));
+        let company_industry_service = Arc::new(CompanyIndustryService::with_repository(company_industry_repository.clone()));
+
         // Department service
         let department_repository = Arc::new(DepartmentRepository::new(db_pool.clone()));
         let department_service = Arc::new(DepartmentService::with_repository(department_repository.clone()));
+
+        // Industry service
+        let industry_repository = Arc::new(IndustryRepository::new(db_pool.clone()));
+        let industry_service = Arc::new(IndustryService::with_repository(industry_repository.clone()));
 
         // <<< CUSTOM
         let onboarding_service = Arc::new(OnboardingService::new(db_pool.clone()));
@@ -158,7 +174,9 @@ impl OrganizationModuleBuilder {
         Ok(OrganizationModule {
             branch_service,
             company_service,
+            company_industry_service,
             department_service,
+            industry_service,
             // <<< CUSTOM
             onboarding_service,
             org_write_service,

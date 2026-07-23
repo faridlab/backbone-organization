@@ -7,11 +7,15 @@ pub use shared_types::{ValidationError, ValidationErrors, ValidationResult, Enti
 
 pub mod branch_validator;
 pub mod company_validator;
+pub mod company_industry_validator;
 pub mod department_validator;
+pub mod industry_validator;
 
 pub use branch_validator::{BranchValidator, branch_validator};
 pub use company_validator::{CompanyValidator, company_validator};
+pub use company_industry_validator::{CompanyIndustryValidator, company_industry_validator};
 pub use department_validator::{DepartmentValidator, department_validator};
+pub use industry_validator::{IndustryValidator, industry_validator};
 
 // <<< CUSTOM
 // END CUSTOM

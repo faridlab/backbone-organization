@@ -4,11 +4,15 @@
 
 pub mod branch_auth;
 pub mod company_auth;
+pub mod company_industry_auth;
 pub mod department_auth;
+pub mod industry_auth;
 
 pub use branch_auth::{BranchPolicy, BranchGuard, BranchServiceGuard};
 pub use company_auth::{CompanyPolicy, CompanyGuard, CompanyServiceGuard};
+pub use company_industry_auth::{CompanyIndustryPolicy, CompanyIndustryGuard, CompanyIndustryServiceGuard};
 pub use department_auth::{DepartmentPolicy, DepartmentGuard, DepartmentServiceGuard};
+pub use industry_auth::{IndustryPolicy, IndustryGuard, IndustryServiceGuard};
 
 // <<< CUSTOM
 // END CUSTOM

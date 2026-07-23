@@ -65,6 +65,33 @@ pub struct CompanyDeletedEvent {
 }
 
 // ============================================================================
+// COMPANYINDUSTRY EVENTS
+// ============================================================================
+
+/// Event published when a CompanyIndustry is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompanyIndustryCreatedEvent {
+    pub id: CompanyIndustryId,
+    pub data: CompanyIndustryDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a CompanyIndustry is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompanyIndustryUpdatedEvent {
+    pub id: CompanyIndustryId,
+    pub data: CompanyIndustryDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a CompanyIndustry is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompanyIndustryDeletedEvent {
+    pub id: CompanyIndustryId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
 // DEPARTMENT EVENTS
 // ============================================================================
 
@@ -92,6 +119,33 @@ pub struct DepartmentDeletedEvent {
 }
 
 // ============================================================================
+// INDUSTRY EVENTS
+// ============================================================================
+
+/// Event published when a Industry is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndustryCreatedEvent {
+    pub id: IndustryId,
+    pub data: IndustryDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Industry is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndustryUpdatedEvent {
+    pub id: IndustryId,
+    pub data: IndustryDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Industry is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndustryDeletedEvent {
+    pub id: IndustryId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
 // MODULE EVENT ENUM
 // ============================================================================
 
@@ -105,9 +159,15 @@ pub enum OrganizationEvent {
     CompanyCreated(CompanyCreatedEvent),
     CompanyUpdated(CompanyUpdatedEvent),
     CompanyDeleted(CompanyDeletedEvent),
+    CompanyIndustryCreated(CompanyIndustryCreatedEvent),
+    CompanyIndustryUpdated(CompanyIndustryUpdatedEvent),
+    CompanyIndustryDeleted(CompanyIndustryDeletedEvent),
     DepartmentCreated(DepartmentCreatedEvent),
     DepartmentUpdated(DepartmentUpdatedEvent),
     DepartmentDeleted(DepartmentDeletedEvent),
+    IndustryCreated(IndustryCreatedEvent),
+    IndustryUpdated(IndustryUpdatedEvent),
+    IndustryDeleted(IndustryDeletedEvent),
 }
 
 /// Metadata for module events

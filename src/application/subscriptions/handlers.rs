@@ -6,7 +6,9 @@ use backbone_messaging::GenericEventSubscriber;
 
 use crate::domain::event::BranchEvent;
 use crate::domain::event::CompanyEvent;
+use crate::domain::event::CompanyIndustryEvent;
 use crate::domain::event::DepartmentEvent;
+use crate::domain::event::IndustryEvent;
 
 /// Subscriber for Branch events.
 ///
@@ -18,10 +20,20 @@ pub type BranchEventSubscriber = GenericEventSubscriber<BranchEvent>;
 /// Register handlers via `GenericEventSubscriber::new(topics, handlers)`.
 pub type CompanyEventSubscriber = GenericEventSubscriber<CompanyEvent>;
 
+/// Subscriber for CompanyIndustry events.
+///
+/// Register handlers via `GenericEventSubscriber::new(topics, handlers)`.
+pub type CompanyIndustryEventSubscriber = GenericEventSubscriber<CompanyIndustryEvent>;
+
 /// Subscriber for Department events.
 ///
 /// Register handlers via `GenericEventSubscriber::new(topics, handlers)`.
 pub type DepartmentEventSubscriber = GenericEventSubscriber<DepartmentEvent>;
+
+/// Subscriber for Industry events.
+///
+/// Register handlers via `GenericEventSubscriber::new(topics, handlers)`.
+pub type IndustryEventSubscriber = GenericEventSubscriber<IndustryEvent>;
 
 // <<< CUSTOM
 // END CUSTOM

@@ -6,7 +6,9 @@
 
 mod branch_repository;
 mod company_repository;
+mod company_industry_repository;
 mod department_repository;
+mod industry_repository;
 
 // Custom persistence modules
 // <<< CUSTOM
@@ -15,7 +17,9 @@ mod department_repository;
 // Re-exports
 pub use branch_repository::BranchRepository;
 pub use company_repository::CompanyRepository;
+pub use company_industry_repository::CompanyIndustryRepository;
 pub use department_repository::DepartmentRepository;
+pub use industry_repository::IndustryRepository;
 
 // Re-export backbone-orm types
 pub use backbone_orm::repository::{

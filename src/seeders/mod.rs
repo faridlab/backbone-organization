@@ -11,11 +11,15 @@ use sqlx::PgPool;
 
 mod branch_seeder;
 mod company_seeder;
+mod company_industry_seeder;
 mod department_seeder;
+mod industry_seeder;
 
 pub use branch_seeder::SeedBranchSeeder;
 pub use company_seeder::SeedCompanySeeder;
+pub use company_industry_seeder::SeedCompanyIndustrySeeder;
 pub use department_seeder::SeedDepartmentSeeder;
+pub use industry_seeder::SeedIndustrySeeder;
 
 // ============================================================================
 // SEEDER TRAIT

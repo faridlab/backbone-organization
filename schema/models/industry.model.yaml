@@ -1,0 +1,166 @@
+# =============================================================================
+# Domain: Organization
+# Entity: Industry
+# Description: Indonesian business-activity classification (KBLI 2020) lookup.
+# NOT a books-owner field; a reference lookup only.
+#
+# ADR-003 Accepted (2026-07-23): the tenant-isolation boundary is settled, so this
+# lookup is now imported and wired. Company<->Industry is M:N via the CompanyIndustry
+# junction (company_industry.model.yaml) — a company may operate in multiple KBLI
+# fields, with is_primary marking the main activity. There is no scalar industry_id
+# on Company.
+#
+# Why KBLI and not salt's organization_industries:
+#   salt's table is a bare {id, name}. The authoritative source is BPS KBLI 2020
+#   (Klasifikasi Baku Lapangan Usaha Indonesia) — a 5-digit hierarchical code with
+#   21 sections (A–U). We model the leaf (5-digit) plus its section letter; the
+#   full division/group/class tree is optional via parent_id. Seed from BPS data.
+# =============================================================================
+
+models:
+  - name: Industry
+    collection: industries
+    description: "KBLI 2020 business-activity classification lookup (referenced as company.industry_id)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique industry identifier"
+
+      # KBLI 2020 leaf code (sub-class, 5 digits). The natural key.
+      code:
+        type: string
+        attributes: ["@required", "@max(5)", "@length(5)"]
+        description: "KBLI 2020 5-digit code (sub-class)"
+
+      name:
+        type: string
+        attributes: ["@required", "@max(300)"]
+        description: "Official KBLI label (Indonesian)"
+
+      # KBLI 2020 section letter A–U (the top-level category). Indexed for filtering.
+      sector:
+        type: KBLISector
+        attributes: ["@required"]
+        description: "KBLI 2020 section (A-U)"
+
+      # Optional hierarchy: a 5-digit's parent is its 4-digit class, etc.
+      # Nullable so seeders can load just the leaves, or the full tree.
+      parent_id:
+        type: uuid?
+        attributes: ["@foreign_key(Industry.id)"]
+        description: "Parent classification node (optional tree)"
+
+      status:
+        type: OrgStatus
+        attributes: ["@default(active)"]
+        description: "Lifecycle status (reused shared active/inactive enum)"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      parent:
+        type: Industry?
+        attributes: ["@one", "@foreign_key(parent_id)"]
+        description: "Parent classification node"
+        inverse: children
+
+      children:
+        type: Industry[]
+        attributes: ["@one_to_many"]
+        description: "More specific classifications under this node"
+        inverse: parent
+
+      company_industries:
+        type: CompanyIndustry[]
+        attributes: ["@one_to_many"]
+        description: "Company<->Industry links referencing this industry"
+        inverse: industry
+
+    indexes:
+      - type: unique
+        fields: [code]
+        where: "deleted_at IS NULL"
+      - type: index
+        fields: [sector]
+      - type: index
+        fields: [parent_id]
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+enums:
+  # KBLI 2020 sections A–U (21 categories). Full official labels in seeder.
+  # NOTE: `default: true` on `A` is STRUCTURAL ONLY — the DSL requires every enum to
+  # declare a default variant. `Industry.sector` is @required and is always set
+  # explicitly from the KBLI code by the seeder, so this default is never the source
+  # of truth for any row. Do not read it as "companies default to Agriculture".
+  - name: KBLISector
+    description: "KBLI 2020 top-level section (A-U)"
+    variants:
+      - name: A
+        description: "Pertanian, Kehutanan, dan Perikanan"
+        default: true
+      - name: B
+        description: "Pertambangan dan Penggalian"
+      - name: C
+        description: "Industri Pengolahan"
+      - name: D
+        description: "Pengadaan Listrik, Gas, Uap/Air Panas dan Udara Dingin"
+      - name: E
+        description: "Pengelolaan Air, Air Limbah, Daur Ulang dan Pembuangan Sampah"
+      - name: F
+        description: "Konstruksi"
+      - name: G
+        description: "Perdagangan Besar dan Eceran"
+      - name: H
+        description: "Transportasi dan Pergudangan"
+      - name: I
+        description: "Akomodasi dan Makan Minum"
+      - name: J
+        description: "Informasi dan Komunikasi"
+      - name: K
+        description: "Aktivitas Keuangan dan Asuransi"
+      - name: L
+        description: "Real Estat"
+      - name: M
+        description: "Aktivitas Profesional, Ilmiah dan Teknis"
+      - name: N
+        description: "Aktivitas Penyewaan dan Sewa Guna Usaha Tanpa Hak Opsi"
+      - name: O
+        description: "Administrasi Pemerintahan, Pertahanan dan Jaminan Sosial Wajib"
+      - name: P
+        description: "Pendidikan"
+      - name: Q
+        description: "Aktivitas Kesehatan Manusia dan Kegiatan Sosial"
+      - name: R
+        description: "Kesenian, Hiburan, dan Rekreasi"
+      - name: S
+        description: "Aktivitas Jasa Lainnya"
+      - name: T
+        description: "Aktivitas Rumah Tangga Sebagai Pemberi Kerja"
+      - name: U
+        description: "Aktivitas Badan Internasional dan Lembaga Ekstra Internasional"
+
+# =============================================================================
+# WIRING STATUS (ADR-003 Accepted 2026-07-23):
+# =============================================================================
+# [done] 1. schema/models/index.model.yaml → imports industry.model.yaml +
+#            company_industry.model.yaml.
+# [done] 2. M:N via CompanyIndustry junction (not a scalar industry_id on Company).
+#            Company.company_industries -> CompanyIndustry, Industry.company_industries
+#            -> CompanyIndustry; is_primary + at-most-one-primary partial unique index.
+# [next] 3. `metaphor schema generate` → regenerates entity/DTO/repo/service/handler/
+#            routes/module.rs/seeders for Industry + CompanyIndustry (+ Company rel).
+# [next] 4. migrations/seeds/industry_seed.sql → KBLI 2020 section headers + leaf codes.
+# [next] 5. `metaphor migration generate add_industry_kbli_lookup`.
+# [next] 6. Industry is reference data — mount READ for all, WRITE for tenant admin
+#            (guarded route composition, see ADR-002). Confirm during route wiring.
+# Full BPS ~1,500-row KBLI 2020 dataset is a data-import follow-up (CSV -> \copy),
+# not hand-authored seed rows.
+# =============================================================================

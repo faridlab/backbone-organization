@@ -8,7 +8,9 @@
 
 pub mod branch_repository;
 pub mod company_repository;
+pub mod company_industry_repository;
 pub mod department_repository;
+pub mod industry_repository;
 
 // Re-exports
 pub use branch_repository::{
@@ -23,9 +25,21 @@ pub use company_repository::{
     CompanyPaginatedResult,
     CompanyFilter,
 };
+pub use company_industry_repository::{
+    CompanyIndustryRepository,
+    CompanyIndustryPaginationParams,
+    CompanyIndustryPaginatedResult,
+    CompanyIndustryFilter,
+};
 pub use department_repository::{
     DepartmentRepository,
     DepartmentPaginationParams,
     DepartmentPaginatedResult,
     DepartmentFilter,
+};
+pub use industry_repository::{
+    IndustryRepository,
+    IndustryPaginationParams,
+    IndustryPaginatedResult,
+    IndustryFilter,
 };

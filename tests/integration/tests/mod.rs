@@ -8,10 +8,14 @@ pub mod crud_test_base;
 
 pub mod branch_api_test;
 pub mod company_api_test;
+pub mod company_industry_api_test;
 pub mod department_api_test;
+pub mod industry_api_test;
 
 // Re-exports for convenience
 pub use crud_test_base::*;
 pub use branch_api_test::*;
 pub use company_api_test::*;
+pub use company_industry_api_test::*;
 pub use department_api_test::*;
+pub use industry_api_test::*;

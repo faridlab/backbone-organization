@@ -269,6 +269,9 @@ impl backbone_orm::EntityRepoMeta for Department {
     fn search_fields() -> &'static [&'static str] {
         &["code", "name"]
     }
+    fn company_field() -> Option<&'static str> {
+        Some("company_id")
+    }
     fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
         &[("company", "companies", "companyId"), ("parent", "departments", "parentId"), ("branch", "branches", "branchId")]
     }

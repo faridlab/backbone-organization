@@ -33,9 +33,15 @@ pub use events::*;
 /// - `CompanyDto` - Data transfer object for Company
 /// - `CompanySummary` - Summary view of Company
 /// - `CompanyId` - Type-safe ID wrapper
+/// - `CompanyIndustryDto` - Data transfer object for CompanyIndustry
+/// - `CompanyIndustrySummary` - Summary view of CompanyIndustry
+/// - `CompanyIndustryId` - Type-safe ID wrapper
 /// - `DepartmentDto` - Data transfer object for Department
 /// - `DepartmentSummary` - Summary view of Department
 /// - `DepartmentId` - Type-safe ID wrapper
+/// - `IndustryDto` - Data transfer object for Industry
+/// - `IndustrySummary` - Summary view of Industry
+/// - `IndustryId` - Type-safe ID wrapper
 ///
 /// ## Public Services
 /// - `OrganizationQueryService` - Read-only queries
@@ -47,7 +53,13 @@ pub use events::*;
 /// - `CompanyCreatedEvent` - Published when Company is created
 /// - `CompanyUpdatedEvent` - Published when Company is updated
 /// - `CompanyDeletedEvent` - Published when Company is deleted
+/// - `CompanyIndustryCreatedEvent` - Published when CompanyIndustry is created
+/// - `CompanyIndustryUpdatedEvent` - Published when CompanyIndustry is updated
+/// - `CompanyIndustryDeletedEvent` - Published when CompanyIndustry is deleted
 /// - `DepartmentCreatedEvent` - Published when Department is created
 /// - `DepartmentUpdatedEvent` - Published when Department is updated
 /// - `DepartmentDeletedEvent` - Published when Department is deleted
+/// - `IndustryCreatedEvent` - Published when Industry is created
+/// - `IndustryUpdatedEvent` - Published when Industry is updated
+/// - `IndustryDeletedEvent` - Published when Industry is deleted
 pub struct ExportSummary;

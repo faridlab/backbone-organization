@@ -157,6 +157,62 @@ pub struct CompanyRef {
 }
 
 // ============================================================================
+// COMPANYINDUSTRY TYPES
+// ============================================================================
+
+/// Type-safe ID for CompanyIndustry
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct CompanyIndustryId(pub Uuid);
+
+impl CompanyIndustryId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for CompanyIndustryId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<CompanyIndustryId> for Uuid {
+    fn from(id: CompanyIndustryId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for CompanyIndustry
+///
+/// This is the public representation of CompanyIndustry for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompanyIndustryDto {
+    pub id: CompanyIndustryId,
+    pub company_id: Uuid,
+    pub industry_id: Uuid,
+    pub is_primary: bool,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of CompanyIndustry for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompanyIndustrySummary {
+    pub id: CompanyIndustryId,
+}
+
+/// Reference to CompanyIndustry for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompanyIndustryRef {
+    pub id: CompanyIndustryId,
+}
+
+// ============================================================================
 // DEPARTMENT TYPES
 // ============================================================================
 
@@ -219,6 +275,66 @@ pub struct DepartmentSummary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DepartmentRef {
     pub id: DepartmentId,
+}
+
+// ============================================================================
+// INDUSTRY TYPES
+// ============================================================================
+
+/// Type-safe ID for Industry
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct IndustryId(pub Uuid);
+
+impl IndustryId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for IndustryId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<IndustryId> for Uuid {
+    fn from(id: IndustryId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for Industry
+///
+/// This is the public representation of Industry for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndustryDto {
+    pub id: IndustryId,
+    pub code: String,
+    pub name: String,
+    pub sector: KBLISector,
+    pub parent_id: Option<Uuid>,
+    pub status: OrgStatus,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of Industry for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndustrySummary {
+    pub id: IndustryId,
+    pub name: String,
+    pub status: OrgStatus,
+}
+
+/// Reference to Industry for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndustryRef {
+    pub id: IndustryId,
 }
 
 // ============================================================================

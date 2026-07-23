@@ -14,7 +14,9 @@ use std::env;
 // Import seeders
 use backbone_organization::seeders::SeedBranchSeeder;
 use backbone_organization::seeders::SeedCompanySeeder;
+use backbone_organization::seeders::SeedCompanyIndustrySeeder;
 use backbone_organization::seeders::SeedDepartmentSeeder;
+use backbone_organization::seeders::SeedIndustrySeeder;
 use backbone_organization::seeders::Seeder;
 
 #[tokio::main]
@@ -45,7 +47,9 @@ async fn main() -> Result<()> {
     let mut seeders: Vec<Box<dyn Seeder + Send + Sync>> = Vec::new();
     seeders.push(Box::new(SeedBranchSeeder::new()));
     seeders.push(Box::new(SeedCompanySeeder::new()));
+    seeders.push(Box::new(SeedCompanyIndustrySeeder::new()));
     seeders.push(Box::new(SeedDepartmentSeeder::new()));
+    seeders.push(Box::new(SeedIndustrySeeder::new()));
 
     // Sort by order
     seeders.sort_by_key(|s| s.order());

@@ -4,11 +4,15 @@
 
 pub mod branch_domain_policy;
 pub mod company_domain_policy;
+pub mod company_industry_domain_policy;
 pub mod department_domain_policy;
+pub mod industry_domain_policy;
 
 pub use branch_domain_policy::BranchDomainPolicy;
 pub use company_domain_policy::CompanyDomainPolicy;
+pub use company_industry_domain_policy::CompanyIndustryDomainPolicy;
 pub use department_domain_policy::DepartmentDomainPolicy;
+pub use industry_domain_policy::IndustryDomainPolicy;
 
 // <<< CUSTOM
 // END CUSTOM

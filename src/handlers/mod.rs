@@ -11,7 +11,9 @@ use std::sync::Arc;
 // Import all services
 use crate::application::service::BranchService;
 use crate::application::service::CompanyService;
+use crate::application::service::CompanyIndustryService;
 use crate::application::service::DepartmentService;
+use crate::application::service::IndustryService;
 
 /// Application state for dependency injection.
 ///
@@ -35,8 +37,12 @@ pub struct AppState {
     pub branch_service: Arc<BranchService>,
     /// Company service
     pub company_service: Arc<CompanyService>,
+    /// CompanyIndustry service
+    pub company_industry_service: Arc<CompanyIndustryService>,
     /// Department service
     pub department_service: Arc<DepartmentService>,
+    /// Industry service
+    pub industry_service: Arc<IndustryService>,
 }
 
 impl AppState {
@@ -44,12 +50,16 @@ impl AppState {
     pub fn new(
         branch_service: Arc<BranchService>,
         company_service: Arc<CompanyService>,
-        department_service: Arc<DepartmentService>
+        company_industry_service: Arc<CompanyIndustryService>,
+        department_service: Arc<DepartmentService>,
+        industry_service: Arc<IndustryService>
     ) -> Self {
         Self {
             branch_service,
             company_service,
+            company_industry_service,
             department_service,
+            industry_service,
         }
     }
 
@@ -58,7 +68,9 @@ impl AppState {
         Self {
             branch_service: module.branch_service.clone(),
             company_service: module.company_service.clone(),
+            company_industry_service: module.company_industry_service.clone(),
             department_service: module.department_service.clone(),
+            industry_service: module.industry_service.clone(),
         }
     }
 }
@@ -70,7 +82,9 @@ impl AppState {
 pub struct AppStateBuilder {
     branch_service: Option<Arc<BranchService>>,
     company_service: Option<Arc<CompanyService>>,
+    company_industry_service: Option<Arc<CompanyIndustryService>>,
     department_service: Option<Arc<DepartmentService>>,
+    industry_service: Option<Arc<IndustryService>>,
 }
 
 impl AppStateBuilder {
@@ -91,9 +105,21 @@ impl AppStateBuilder {
         self
     }
 
+    /// Set the CompanyIndustry service.
+    pub fn with_company_industry_service(mut self, service: Arc<CompanyIndustryService>) -> Self {
+        self.company_industry_service = Some(service);
+        self
+    }
+
     /// Set the Department service.
     pub fn with_department_service(mut self, service: Arc<DepartmentService>) -> Self {
         self.department_service = Some(service);
+        self
+    }
+
+    /// Set the Industry service.
+    pub fn with_industry_service(mut self, service: Arc<IndustryService>) -> Self {
+        self.industry_service = Some(service);
         self
     }
 
@@ -106,7 +132,9 @@ impl AppStateBuilder {
         AppState {
             branch_service: self.branch_service.expect("branch_service is required"),
             company_service: self.company_service.expect("company_service is required"),
+            company_industry_service: self.company_industry_service.expect("company_industry_service is required"),
             department_service: self.department_service.expect("department_service is required"),
+            industry_service: self.industry_service.expect("industry_service is required"),
         }
     }
 }

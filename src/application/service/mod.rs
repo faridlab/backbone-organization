@@ -9,7 +9,9 @@ pub use error::{ServiceError, ServiceResult};
 
 pub mod branch_service;
 pub mod company_service;
+pub mod company_industry_service;
 pub mod department_service;
+pub mod industry_service;
 
 // <<< CUSTOM
 pub mod onboarding_service;
@@ -18,7 +20,9 @@ pub mod org_write_service;
 
 pub use branch_service::BranchService;
 pub use company_service::CompanyService;
+pub use company_industry_service::CompanyIndustryService;
 pub use department_service::DepartmentService;
+pub use industry_service::IndustryService;
 // <<< CUSTOM
 pub use onboarding_service::{
     validate_npwp, OnboardError, OnboardRequest, OnboardResult, OnboardingService,
