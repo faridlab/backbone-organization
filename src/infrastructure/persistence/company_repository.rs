@@ -130,4 +130,42 @@ impl CompanyRepository {
     }
 }
 
+/// Lightweight read shape for the company hierarchy endpoint. Enums are cast
+/// to `::text` in the SELECT so this binds as plain `String` (no Rust enum
+/// types needed here).
+#[derive(Debug, sqlx::FromRow)]
+pub struct CompanyHierarchyRow {
+    pub id: Uuid,
+    pub code: String,
+    pub legal_name: String,
+    pub trade_name: Option<String>,
+    pub entity_type: String,
+    pub base_currency: String,
+    pub status: String,
+}
+
+/// Hand-written Company SQL for the hierarchy read.
+impl CompanyRepository {
+    /// Fetch a live (non-soft-deleted) company by id in the hierarchy read
+    /// shape. `Ok(None)` = no such company (the hierarchy endpoint 404s).
+    /// Company-scoped via `fetch_optional_scoped` (ADR-0008), like the other
+    /// reads — under the company-scoped app role a foreign id yields `None`.
+    pub async fn find_live_by_id(
+        &self,
+        pool: &PgPool,
+        id: Uuid,
+    ) -> Result<Option<CompanyHierarchyRow>, sqlx::Error> {
+        company_scope::fetch_optional_scoped(
+            pool,
+            sqlx::query_as::<_, CompanyHierarchyRow>(
+                "SELECT id, code, legal_name, trade_name, entity_type::text, base_currency, status::text \
+                 FROM organization.companies \
+                 WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
+            )
+            .bind(id),
+        )
+        .await
+    }
+}
+
 backbone_core::impl_crud_repository!(CompanyRepository, Company, soft_delete);

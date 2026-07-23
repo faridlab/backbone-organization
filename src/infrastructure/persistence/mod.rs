@@ -35,4 +35,8 @@ pub use backbone_orm::repository::{
 pub use branch_repository::{NewBranchRow, NewHeadOfficeBranchRow};
 pub use company_repository::NewCompanyRow;
 pub use department_repository::NewDepartmentRow;
+// Hierarchy-read row shapes (company/branch/department).
+pub use branch_repository::BranchHierarchyRow;
+pub use company_repository::CompanyHierarchyRow;
+pub use department_repository::DepartmentHierarchyRow;
 // END CUSTOM

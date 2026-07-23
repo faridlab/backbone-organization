@@ -40,11 +40,12 @@ pub use application::service::IndustryService;
 // <<< CUSTOM
 pub use application::service::{
     validate_npwp, NewBranch, NewDepartment, OnboardError, OnboardRequest, OnboardResult,
-    OnboardingService, OrgWriteError, OrgWriteService,
+    OnboardingService, OrgWriteError, OrgWriteService, HierarchyService,
 };
 pub use presentation::http::{
     create_guarded_organization_routes, create_guarded_organization_routes_checked,
-    create_onboarding_routes, create_organization_routes, require_known_company,
+    create_hierarchy_routes, create_onboarding_routes, create_organization_routes,
+    require_known_company,
 };
 // END CUSTOM
 // Re-exports - Workflows
@@ -77,6 +78,8 @@ pub struct OrganizationModule {
     pub onboarding_service: Arc<OnboardingService>,
     /// Validated Branch/Department writes (NPWP format, same-company parent/branch, no cycle).
     pub org_write_service: Arc<OrgWriteService>,
+    /// Company operational hierarchy read (Company → Branches → Departments tree).
+    pub hierarchy_service: Arc<HierarchyService>,
     // END CUSTOM
 }
 
@@ -169,6 +172,7 @@ impl OrganizationModuleBuilder {
         // <<< CUSTOM
         let onboarding_service = Arc::new(OnboardingService::new(db_pool.clone()));
         let org_write_service = Arc::new(OrgWriteService::new(db_pool.clone()));
+        let hierarchy_service = Arc::new(HierarchyService::new(db_pool.clone()));
         // END CUSTOM
 
         Ok(OrganizationModule {
@@ -180,6 +184,7 @@ impl OrganizationModuleBuilder {
             // <<< CUSTOM
             onboarding_service,
             org_write_service,
+            hierarchy_service,
             // END CUSTOM
         })
     }

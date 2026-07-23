@@ -153,4 +153,41 @@ impl BranchRepository {
     }
 }
 
+/// Lightweight read shape for the branch level of the hierarchy endpoint.
+/// `branch_type`/`status` cast to `::text` so this binds as `String`.
+#[derive(Debug, sqlx::FromRow)]
+pub struct BranchHierarchyRow {
+    pub id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub branch_type: String,
+    pub is_head_office: bool,
+    pub city: Option<String>,
+    pub status: String,
+}
+
+/// Hand-written Branch SQL for the hierarchy read.
+impl BranchRepository {
+    /// All live (non-soft-deleted) branches of `company_id`, head office first.
+    /// Company-scoped via `fetch_all_scoped` (ADR-0008) — under the
+    /// company-scoped app role only the request's own company returns rows.
+    pub async fn list_live_by_company(
+        &self,
+        pool: &PgPool,
+        company_id: Uuid,
+    ) -> Result<Vec<BranchHierarchyRow>, sqlx::Error> {
+        company_scope::fetch_all_scoped(
+            pool,
+            sqlx::query_as::<_, BranchHierarchyRow>(
+                "SELECT id, code, name, branch_type::text, is_head_office, city, status::text \
+                 FROM organization.branches \
+                 WHERE company_id=$1 AND (metadata->>'deleted_at') IS NULL \
+                 ORDER BY is_head_office DESC, code",
+            )
+            .bind(company_id),
+        )
+        .await
+    }
+}
+
 backbone_core::impl_crud_repository!(BranchRepository, Branch, soft_delete);

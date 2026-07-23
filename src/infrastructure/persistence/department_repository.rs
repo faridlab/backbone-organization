@@ -130,4 +130,44 @@ impl DepartmentRepository {
     }
 }
 
+/// Lightweight read shape for the department level of the hierarchy endpoint.
+/// `status` cast to `::text` so this binds as `String`. Carries `parent_id`
+/// (tree) and `branch_id` (partition) so the service can build the forest and
+/// group departments under their branch.
+#[derive(Debug, sqlx::FromRow, Clone)]
+pub struct DepartmentHierarchyRow {
+    pub id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub parent_id: Option<Uuid>,
+    pub branch_id: Option<Uuid>,
+    pub level: i32,
+    pub is_group: bool,
+    pub status: String,
+}
+
+/// Hand-written Department SQL for the hierarchy read.
+impl DepartmentRepository {
+    /// All live (non-soft-deleted) departments of `company_id`, in tree order
+    /// (level, then sort_order, then code) so parents precede children.
+    /// Company-scoped via `fetch_all_scoped` (ADR-0008).
+    pub async fn list_live_by_company(
+        &self,
+        pool: &PgPool,
+        company_id: Uuid,
+    ) -> Result<Vec<DepartmentHierarchyRow>, sqlx::Error> {
+        company_scope::fetch_all_scoped(
+            pool,
+            sqlx::query_as::<_, DepartmentHierarchyRow>(
+                "SELECT id, code, name, parent_id, branch_id, level, is_group, status::text \
+                 FROM organization.departments \
+                 WHERE company_id=$1 AND (metadata->>'deleted_at') IS NULL \
+                 ORDER BY level, sort_order, code",
+            )
+            .bind(company_id),
+        )
+        .await
+    }
+}
+
 backbone_core::impl_crud_repository!(DepartmentRepository, Department, soft_delete);

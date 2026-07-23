@@ -16,6 +16,7 @@ pub mod industry_service;
 // <<< CUSTOM
 pub mod onboarding_service;
 pub mod org_write_service;
+pub mod hierarchy_service;
 // END CUSTOM
 
 pub use branch_service::BranchService;
@@ -28,4 +29,8 @@ pub use onboarding_service::{
     validate_npwp, OnboardError, OnboardRequest, OnboardResult, OnboardingService,
 };
 pub use org_write_service::{NewBranch, NewDepartment, OrgWriteError, OrgWriteService};
+pub use hierarchy_service::{
+    BranchHierarchy, CompanyHierarchy, CompanyInfo, DepartmentNode, HierarchyError,
+    HierarchyService,
+};
 // END CUSTOM

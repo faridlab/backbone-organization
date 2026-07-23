@@ -14,6 +14,7 @@ pub mod industry_handler;
 // <<< CUSTOM
 pub mod onboarding_handler;
 pub mod guarded_routes;
+pub mod hierarchy_handler;
 // END CUSTOM
 
 // Re-exports
@@ -25,4 +26,5 @@ pub use industry_handler::{create_industry_routes, create_industry_read_routes, 
 // <<< CUSTOM
 pub use onboarding_handler::{create_onboarding_routes, create_organization_routes};
 pub use guarded_routes::{create_guarded_organization_routes, create_guarded_organization_routes_checked, require_known_company};
+pub use hierarchy_handler::create_hierarchy_routes;
 // END CUSTOM

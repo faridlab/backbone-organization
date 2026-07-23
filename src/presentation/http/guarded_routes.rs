@@ -41,7 +41,7 @@ use crate::OrganizationModule;
 
 use super::{
     create_branch_read_routes, create_company_read_routes, create_department_read_routes,
-    create_onboarding_routes,
+    create_hierarchy_routes, create_onboarding_routes,
 };
 
 #[derive(Debug, Serialize)]
@@ -240,6 +240,7 @@ pub fn create_guarded_organization_routes(
         // Company: read-only. Sole writer is onboarding (company + head-office branch, atomic).
         .merge(create_company_read_routes(m.company_service.clone()))
         .merge(create_onboarding_routes(m.onboarding_service.clone()))
+        .merge(create_hierarchy_routes(m.hierarchy_service.clone()))
         // Branch / Department: read + validated writes.
         .merge(create_branch_read_routes(m.branch_service.clone()))
         .merge(create_department_read_routes(m.department_service.clone()))
@@ -270,6 +271,7 @@ pub fn create_guarded_organization_routes_checked(
     Router::new()
         .merge(create_company_read_routes(m.company_service.clone()))
         .merge(create_onboarding_routes(m.onboarding_service.clone()))
+        .merge(create_hierarchy_routes(m.hierarchy_service.clone()))
         .merge(create_branch_read_routes(m.branch_service.clone()))
         .merge(create_department_read_routes(m.department_service.clone()))
         .merge(writes)

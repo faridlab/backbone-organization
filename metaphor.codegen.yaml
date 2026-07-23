@@ -17,6 +17,10 @@ user_owned:
   - "src/application/service/org_write_service.rs"
   - "src/presentation/http/guarded_routes.rs"
 
+  # Company operational hierarchy read (Company → Branches → Departments tree).
+  - "src/application/service/hierarchy_service.rs"
+  - "src/presentation/http/hierarchy_handler.rs"
+
   # Own the hand-written org SQL (the company/parent/branch link probes and the branch + department
   # writes) that the validated write path orchestrates. Declared here — not renamed with a `_custom`
   # suffix — so the generator skips them wholesale; this declaration is what makes editing them
@@ -28,6 +32,7 @@ user_owned:
   # Behavior tests (the golden cases / oracle) + route-level integrity probes + BDD features.
   - "tests/onboarding_golden_cases.rs"
   - "tests/integrity_probes.rs"
+  - "tests/hierarchy_cases.rs"
   - "tests/features/**"
 
   # Hand-authored module documentation.
