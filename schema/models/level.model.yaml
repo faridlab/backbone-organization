@@ -1,0 +1,57 @@
+# =============================================================================
+# Domain: Organization
+# Entity: Level
+# Description: A job level / grade (reference master). Referenced as level_id by
+# backbone-employee.employments (logical FK — no DB constraint).
+# =============================================================================
+
+models:
+  - name: Level
+    collection: levels
+    description: "Job level / grade (referenced as level_id by backbone-employee.employments)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique level identifier"
+
+      company_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Company.id)"]
+        description: "Owning company"
+
+      name:
+        type: string
+        attributes: ["@required", "@max(150)"]
+        description: "Level / grade name (e.g. 'Staff', 'Manager')"
+
+      grade:
+        type: string?
+        attributes: ["@max(20)"]
+        description: "Short grade code (e.g. L1..L5)"
+
+      order_number:
+        type: int?
+        description: "Ranking order (lower = more senior / earlier); nullable"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      company:
+        type: Company
+        attributes: ["@one", "@foreign_key(company_id)"]
+        description: "Owning company"
+        inverse: levels
+
+    indexes:
+      - type: unique
+        fields: [company_id, name]
+        where: "deleted_at IS NULL"
+      - type: index
+        fields: [company_id, order_number]
+      - type: index
+        fields: [company_id]

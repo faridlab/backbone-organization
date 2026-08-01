@@ -1,0 +1,75 @@
+# =============================================================================
+# Domain: Organization
+# Entity: Structure
+# Description: An org structural unit (division / team / cost-center node) that can
+# form a hierarchy. Referenced as structure_id by backbone-schedule.schedule_organizations
+# (logical FK — no DB constraint).
+#
+# parent_id  : self-reference for the hierarchy (in-module FK to Structure.id).
+# manager_id : logical FK to an employee (backbone-employee.Employee.id) — cross-module,
+#              so it carries @exclude_from_foreign_key_check (mirrors Department.manager_id).
+# =============================================================================
+
+models:
+  - name: Structure
+    collection: structures
+    description: "Org structural unit (referenced as structure_id by backbone-schedule.schedule_organizations)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique structure identifier"
+
+      company_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Company.id)"]
+        description: "Owning company"
+
+      name:
+        type: string
+        attributes: ["@required", "@max(150)"]
+        description: "Structural unit name"
+
+      # Hierarchy (tree)
+      parent_id:
+        type: uuid?
+        attributes: ["@foreign_key(Structure.id)"]
+        description: "Parent structural unit"
+
+      manager_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Unit manager # logical FK to backbone-employee.Employee.id"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      company:
+        type: Company
+        attributes: ["@one", "@foreign_key(company_id)"]
+        description: "Owning company"
+        inverse: structures
+
+      parent:
+        type: Structure?
+        attributes: ["@one", "@foreign_key(parent_id)"]
+        description: "Parent structural unit"
+        inverse: children
+
+      children:
+        type: Structure[]
+        attributes: ["@one_to_many"]
+        description: "Child structural units"
+        inverse: parent
+
+    indexes:
+      - type: index
+        fields: [company_id, parent_id]
+      - type: index
+        fields: [company_id, name]
+      - type: index
+        fields: [parent_id]

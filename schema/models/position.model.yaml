@@ -1,0 +1,59 @@
+# =============================================================================
+# Domain: Organization
+# Entity: Position
+# Description: A job position / title (reference master). Referenced as position_id
+# by backbone-employee.employments (logical FK — no DB constraint).
+# =============================================================================
+
+models:
+  - name: Position
+    collection: positions
+    description: "Job position / title (referenced as position_id by backbone-employee.employments)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique position identifier"
+
+      company_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Company.id)"]
+        description: "Owning company"
+
+      name:
+        type: string
+        attributes: ["@required", "@max(150)"]
+        description: "Position / job title"
+
+      code:
+        type: string?
+        attributes: ["@max(30)"]
+        description: "Short code, unique within the company when provided"
+
+      description:
+        type: string?
+        attributes: ["@max(1000)"]
+        description: "Free-form description (responsibilities, scope)"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      company:
+        type: Company
+        attributes: ["@one", "@foreign_key(company_id)"]
+        description: "Owning company"
+        inverse: positions
+
+    indexes:
+      # code is optional — only enforce uniqueness where a code is actually set.
+      - type: unique
+        fields: [company_id, code]
+        where: "code IS NOT NULL AND deleted_at IS NULL"
+      - type: index
+        fields: [company_id, name]
+      - type: index
+        fields: [company_id]
