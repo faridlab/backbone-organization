@@ -9,6 +9,9 @@ mod company_repository;
 mod company_industry_repository;
 mod department_repository;
 mod industry_repository;
+mod level_repository;
+mod position_repository;
+mod structure_repository;
 
 // Custom persistence modules
 // <<< CUSTOM
@@ -20,6 +23,9 @@ pub use company_repository::CompanyRepository;
 pub use company_industry_repository::CompanyIndustryRepository;
 pub use department_repository::DepartmentRepository;
 pub use industry_repository::IndustryRepository;
+pub use level_repository::LevelRepository;
+pub use position_repository::PositionRepository;
+pub use structure_repository::StructureRepository;
 
 // Re-export backbone-orm types
 pub use backbone_orm::repository::{

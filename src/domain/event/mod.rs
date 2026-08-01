@@ -12,6 +12,12 @@ pub mod department_events;
 pub mod department_event_handlers;
 pub mod industry_events;
 pub mod industry_event_handlers;
+pub mod level_events;
+pub mod level_event_handlers;
+pub mod position_events;
+pub mod position_event_handlers;
+pub mod structure_events;
+pub mod structure_event_handlers;
 
 pub use branch_events::{BranchEvent, BranchEventPublisher, NoopBranchEventPublisher};
 pub use branch_event_handlers::BranchEventHandler;
@@ -23,6 +29,12 @@ pub use department_events::{DepartmentEvent, DepartmentEventPublisher, NoopDepar
 pub use department_event_handlers::DepartmentEventHandler;
 pub use industry_events::{IndustryEvent, IndustryEventPublisher, NoopIndustryEventPublisher};
 pub use industry_event_handlers::IndustryEventHandler;
+pub use level_events::{LevelEvent, LevelEventPublisher, NoopLevelEventPublisher};
+pub use level_event_handlers::LevelEventHandler;
+pub use position_events::{PositionEvent, PositionEventPublisher, NoopPositionEventPublisher};
+pub use position_event_handlers::PositionEventHandler;
+pub use structure_events::{StructureEvent, StructureEventPublisher, NoopStructureEventPublisher};
+pub use structure_event_handlers::StructureEventHandler;
 
 // <<< CUSTOM
 // END CUSTOM

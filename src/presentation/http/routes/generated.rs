@@ -14,6 +14,9 @@ use super::{
     company_industry_handler::create_company_industry_routes,
     department_handler::create_department_routes,
     industry_handler::create_industry_routes,
+    level_handler::create_level_routes,
+    position_handler::create_position_routes,
+    structure_handler::create_structure_routes,
 };
 
 use crate::application::service::{
@@ -22,6 +25,9 @@ use crate::application::service::{
     CompanyIndustryService,
     DepartmentService,
     IndustryService,
+    LevelService,
+    PositionService,
+    StructureService,
 };
 
 /// Services collection for all CRUD endpoints
@@ -31,6 +37,9 @@ pub struct HttpServices {
     pub company_industry: Arc<CompanyIndustryService>,
     pub department: Arc<DepartmentService>,
     pub industry: Arc<IndustryService>,
+    pub level: Arc<LevelService>,
+    pub position: Arc<PositionService>,
+    pub structure: Arc<StructureService>,
 }
 
 /// Configure all HTTP routes for this module using Axum and BackboneCrudHandler.
@@ -60,6 +69,12 @@ pub fn configure_routes(services: HttpServices) -> Router {
         .merge(create_department_routes(services.department))
         // Industry routes (12 Backbone endpoints)
         .merge(create_industry_routes(services.industry))
+        // Level routes (12 Backbone endpoints)
+        .merge(create_level_routes(services.level))
+        // Position routes (12 Backbone endpoints)
+        .merge(create_position_routes(services.position))
+        // Structure routes (12 Backbone endpoints)
+        .merge(create_structure_routes(services.structure))
 }
 
 /// Create an individual entity's routes (for modular configuration)
@@ -84,6 +99,18 @@ pub mod individual {
 
     pub fn industry_routes(service: Arc<IndustryService>) -> Router {
         create_industry_routes(service)
+    }
+
+    pub fn level_routes(service: Arc<LevelService>) -> Router {
+        create_level_routes(service)
+    }
+
+    pub fn position_routes(service: Arc<PositionService>) -> Router {
+        create_position_routes(service)
+    }
+
+    pub fn structure_routes(service: Arc<StructureService>) -> Router {
+        create_structure_routes(service)
     }
 
 }

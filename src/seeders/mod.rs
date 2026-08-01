@@ -14,12 +14,18 @@ mod company_seeder;
 mod company_industry_seeder;
 mod department_seeder;
 mod industry_seeder;
+mod level_seeder;
+mod position_seeder;
+mod structure_seeder;
 
 pub use branch_seeder::SeedBranchSeeder;
 pub use company_seeder::SeedCompanySeeder;
 pub use company_industry_seeder::SeedCompanyIndustrySeeder;
 pub use department_seeder::SeedDepartmentSeeder;
 pub use industry_seeder::SeedIndustrySeeder;
+pub use level_seeder::SeedLevelSeeder;
+pub use position_seeder::SeedPositionSeeder;
+pub use structure_seeder::SeedStructureSeeder;
 
 // ============================================================================
 // SEEDER TRAIT

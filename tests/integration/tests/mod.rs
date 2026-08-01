@@ -11,6 +11,9 @@ pub mod company_api_test;
 pub mod company_industry_api_test;
 pub mod department_api_test;
 pub mod industry_api_test;
+pub mod level_api_test;
+pub mod position_api_test;
+pub mod structure_api_test;
 
 // Re-exports for convenience
 pub use crud_test_base::*;
@@ -19,3 +22,6 @@ pub use company_api_test::*;
 pub use company_industry_api_test::*;
 pub use department_api_test::*;
 pub use industry_api_test::*;
+pub use level_api_test::*;
+pub use position_api_test::*;
+pub use structure_api_test::*;

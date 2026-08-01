@@ -5,8 +5,6 @@
 //! These services provide the public API for other modules.
 //! They only expose read operations - writes go through events.
 
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
 use uuid::Uuid;
@@ -68,21 +66,33 @@ pub trait OrganizationQueryService: Send + Sync {
     /// Check if Industry exists
     async fn industry_exists(&self, id: IndustryId) -> Result<bool>;
 
-}
+    /// Get Level by ID
+    async fn get_level(&self, id: LevelId) -> Result<Option<LevelDto>>;
 
-// ============================================================================
-// QUERY SERVICE IMPLEMENTATION
-// ============================================================================
+    /// Get Level summary by ID
+    async fn get_level_summary(&self, id: LevelId) -> Result<Option<LevelSummary>>;
 
-/// Default implementation of OrganizationQueryService
-pub struct OrganizationQueryServiceImpl<R> {
-    repository: Arc<R>,
-}
+    /// Check if Level exists
+    async fn level_exists(&self, id: LevelId) -> Result<bool>;
 
-impl<R> OrganizationQueryServiceImpl<R> {
-    pub fn new(repository: Arc<R>) -> Self {
-        Self { repository }
-    }
+    /// Get Position by ID
+    async fn get_position(&self, id: PositionId) -> Result<Option<PositionDto>>;
+
+    /// Get Position summary by ID
+    async fn get_position_summary(&self, id: PositionId) -> Result<Option<PositionSummary>>;
+
+    /// Check if Position exists
+    async fn position_exists(&self, id: PositionId) -> Result<bool>;
+
+    /// Get Structure by ID
+    async fn get_structure(&self, id: StructureId) -> Result<Option<StructureDto>>;
+
+    /// Get Structure summary by ID
+    async fn get_structure_summary(&self, id: StructureId) -> Result<Option<StructureSummary>>;
+
+    /// Check if Structure exists
+    async fn structure_exists(&self, id: StructureId) -> Result<bool>;
+
 }
 
 // ============================================================================

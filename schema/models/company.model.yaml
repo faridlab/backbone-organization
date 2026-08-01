@@ -164,6 +164,26 @@ models:
         description: "KBLI 2020 industry classifications (multiple; one may be primary)"
         inverse: company
 
+      # Reference masters (Phase 0 / org-readiness) — consumed as logical FKs by
+      # backbone-employee.employments and backbone-schedule.schedule_organizations.
+      positions:
+        type: Position[]
+        attributes: ["@one_to_many"]
+        description: "Job positions / titles defined for this company"
+        inverse: company
+
+      levels:
+        type: Level[]
+        attributes: ["@one_to_many"]
+        description: "Job levels / grades defined for this company"
+        inverse: company
+
+      structures:
+        type: Structure[]
+        attributes: ["@one_to_many"]
+        description: "Org structural units defined for this company"
+        inverse: company
+
     indexes:
       - type: unique
         fields: [code]

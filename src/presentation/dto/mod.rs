@@ -10,6 +10,9 @@ pub mod company_dto;
 pub mod company_industry_dto;
 pub mod department_dto;
 pub mod industry_dto;
+pub mod level_dto;
+pub mod position_dto;
+pub mod structure_dto;
 
 // Re-exports
 pub use branch_dto::{
@@ -51,6 +54,30 @@ pub use industry_dto::{
     IndustryResponseDto,
     IndustryListResponseDto,
     IndustrySummaryDto,
+};
+pub use level_dto::{
+    CreateLevelDto,
+    UpdateLevelDto,
+    PatchLevelDto,
+    LevelResponseDto,
+    LevelListResponseDto,
+    LevelSummaryDto,
+};
+pub use position_dto::{
+    CreatePositionDto,
+    UpdatePositionDto,
+    PatchPositionDto,
+    PositionResponseDto,
+    PositionListResponseDto,
+    PositionSummaryDto,
+};
+pub use structure_dto::{
+    CreateStructureDto,
+    UpdateStructureDto,
+    PatchStructureDto,
+    StructureResponseDto,
+    StructureListResponseDto,
+    StructureSummaryDto,
 };
 
 // Common pagination types

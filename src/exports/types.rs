@@ -338,6 +338,180 @@ pub struct IndustryRef {
 }
 
 // ============================================================================
+// LEVEL TYPES
+// ============================================================================
+
+/// Type-safe ID for Level
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct LevelId(pub Uuid);
+
+impl LevelId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for LevelId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<LevelId> for Uuid {
+    fn from(id: LevelId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for Level
+///
+/// This is the public representation of Level for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LevelDto {
+    pub id: LevelId,
+    pub company_id: Uuid,
+    pub name: String,
+    pub grade: Option<String>,
+    pub order_number: Option<i32>,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of Level for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LevelSummary {
+    pub id: LevelId,
+    pub name: String,
+}
+
+/// Reference to Level for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LevelRef {
+    pub id: LevelId,
+}
+
+// ============================================================================
+// POSITION TYPES
+// ============================================================================
+
+/// Type-safe ID for Position
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PositionId(pub Uuid);
+
+impl PositionId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for PositionId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<PositionId> for Uuid {
+    fn from(id: PositionId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for Position
+///
+/// This is the public representation of Position for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PositionDto {
+    pub id: PositionId,
+    pub company_id: Uuid,
+    pub name: String,
+    pub code: Option<String>,
+    pub description: Option<String>,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of Position for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PositionSummary {
+    pub id: PositionId,
+    pub name: String,
+}
+
+/// Reference to Position for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PositionRef {
+    pub id: PositionId,
+}
+
+// ============================================================================
+// STRUCTURE TYPES
+// ============================================================================
+
+/// Type-safe ID for Structure
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct StructureId(pub Uuid);
+
+impl StructureId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for StructureId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<StructureId> for Uuid {
+    fn from(id: StructureId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for Structure
+///
+/// This is the public representation of Structure for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StructureDto {
+    pub id: StructureId,
+    pub company_id: Uuid,
+    pub name: String,
+    pub parent_id: Option<Uuid>,
+    pub manager_id: Option<Uuid>,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of Structure for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StructureSummary {
+    pub id: StructureId,
+    pub name: String,
+}
+
+/// Reference to Structure for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StructureRef {
+    pub id: StructureId,
+}
+
+// ============================================================================
 // CUSTOM TYPES
 // ============================================================================
 

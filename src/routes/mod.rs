@@ -20,7 +20,13 @@ use crate::presentation::http::{
     create_department_routes,
     create_department_read_routes,
     create_industry_routes,
-    create_industry_read_routes
+    create_industry_read_routes,
+    create_level_routes,
+    create_level_read_routes,
+    create_position_routes,
+    create_position_read_routes,
+    create_structure_routes,
+    create_structure_read_routes
 };
 
 // Import AppState for stateful routes
@@ -49,6 +55,9 @@ pub fn create_stateless_routes(module: &crate::OrganizationModule) -> Router<()>
         .merge(create_company_industry_routes(module.company_industry_service.clone()))
         .merge(create_department_routes(module.department_service.clone()))
         .merge(create_industry_routes(module.industry_service.clone()))
+        .merge(create_level_routes(module.level_service.clone()))
+        .merge(create_position_routes(module.position_service.clone()))
+        .merge(create_structure_routes(module.structure_service.clone()))
 }
 
 /// Read-only routes for the Organization module — every entity mounted READ-ONLY (the guarded base).
@@ -63,6 +72,9 @@ pub fn create_readonly_organization_routes(module: &crate::OrganizationModule) -
         .merge(create_company_industry_read_routes(module.company_industry_service.clone()))
         .merge(create_department_read_routes(module.department_service.clone()))
         .merge(create_industry_read_routes(module.industry_service.clone()))
+        .merge(create_level_read_routes(module.level_service.clone()))
+        .merge(create_position_read_routes(module.position_service.clone()))
+        .merge(create_structure_read_routes(module.structure_service.clone()))
 }
 
 /// Get all routes (stateless) for the Organization module.

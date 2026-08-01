@@ -23,6 +23,7 @@ pub mod infrastructure;
 pub mod application;
 pub mod presentation;
 pub mod seeders;
+pub mod exports;
 
 // Re-exports for convenience - Domain entities
 pub use domain::entity::*;
@@ -36,7 +37,6 @@ pub use application::service::CompanyService;
 pub use application::service::CompanyIndustryService;
 pub use application::service::DepartmentService;
 pub use application::service::IndustryService;
-
 // <<< CUSTOM
 pub use application::service::{
     validate_npwp, NewBranch, NewDepartment, OnboardError, OnboardRequest, OnboardResult,
@@ -48,6 +48,10 @@ pub use presentation::http::{
     require_known_company,
 };
 // END CUSTOM
+pub use application::service::LevelService;
+pub use application::service::PositionService;
+pub use application::service::StructureService;
+
 // Re-exports - Workflows
 pub use application::workflows::*;
 
@@ -68,12 +72,15 @@ use sqlx::PgPool;
 /// let router = organization.all_crud_routes();
 /// ```
 pub struct OrganizationModule {
-    pub branch_service: Arc<BranchService>,
-    pub company_service: Arc<CompanyService>,
-    pub company_industry_service: Arc<CompanyIndustryService>,
-    pub department_service: Arc<DepartmentService>,
-    pub industry_service: Arc<IndustryService>,
-    // <<< CUSTOM
+    pub(crate) branch_service: Arc<BranchService>,
+    pub(crate) company_service: Arc<CompanyService>,
+    pub(crate) company_industry_service: Arc<CompanyIndustryService>,
+    pub(crate) department_service: Arc<DepartmentService>,
+    pub(crate) industry_service: Arc<IndustryService>,
+    pub(crate) level_service: Arc<LevelService>,
+    pub(crate) position_service: Arc<PositionService>,
+    pub(crate) structure_service: Arc<StructureService>,
+    // <<< CUSTOM FIELDS
     /// Atomic company onboarding (Company + head-office Branch in one transaction).
     pub onboarding_service: Arc<OnboardingService>,
     /// Validated Branch/Department writes (NPWP format, same-company parent/branch, no cycle).
@@ -101,6 +108,9 @@ impl OrganizationModule {
             create_company_industry_routes,
             create_department_routes,
             create_industry_routes,
+            create_level_routes,
+            create_position_routes,
+            create_structure_routes,
         };
 
         Router::new()
@@ -109,6 +119,9 @@ impl OrganizationModule {
             .merge(create_company_industry_routes(self.company_industry_service.clone()))
             .merge(create_department_routes(self.department_service.clone()))
             .merge(create_industry_routes(self.industry_service.clone()))
+            .merge(create_level_routes(self.level_service.clone()))
+            .merge(create_position_routes(self.position_service.clone()))
+            .merge(create_structure_routes(self.structure_service.clone()))
     }
 
     /// Deprecated alias for [`Self::all_crud_routes`]. `routes()` reads like
@@ -174,6 +187,20 @@ impl OrganizationModuleBuilder {
         let org_write_service = Arc::new(OrgWriteService::new(db_pool.clone()));
         let hierarchy_service = Arc::new(HierarchyService::new(db_pool.clone()));
         // END CUSTOM
+        // Level service
+        let level_repository = Arc::new(LevelRepository::new(db_pool.clone()));
+        let level_service = Arc::new(LevelService::with_repository(level_repository.clone()));
+
+        // Position service
+        let position_repository = Arc::new(PositionRepository::new(db_pool.clone()));
+        let position_service = Arc::new(PositionService::with_repository(position_repository.clone()));
+
+        // Structure service
+        let structure_repository = Arc::new(StructureRepository::new(db_pool.clone()));
+        let structure_service = Arc::new(StructureService::with_repository(structure_repository.clone()));
+
+        // <<< CUSTOM
+        // END CUSTOM
 
         Ok(OrganizationModule {
             branch_service,
@@ -185,6 +212,11 @@ impl OrganizationModuleBuilder {
             onboarding_service,
             org_write_service,
             hierarchy_service,
+            // END CUSTOM
+            level_service,
+            position_service,
+            structure_service,
+            // <<< CUSTOM
             // END CUSTOM
         })
     }

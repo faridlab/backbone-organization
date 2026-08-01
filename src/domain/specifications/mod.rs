@@ -11,6 +11,9 @@ pub mod company_specification;
 pub mod company_industry_specification;
 pub mod department_specification;
 pub mod industry_specification;
+pub mod level_specification;
+pub mod position_specification;
+pub mod structure_specification;
 
 // <<< CUSTOM
 // END CUSTOM

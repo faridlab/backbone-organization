@@ -10,12 +10,18 @@ pub mod company_bulk;
 pub mod company_industry_bulk;
 pub mod department_bulk;
 pub mod industry_bulk;
+pub mod level_bulk;
+pub mod position_bulk;
+pub mod structure_bulk;
 
 pub use branch_bulk::BranchBulkService;
 pub use company_bulk::CompanyBulkService;
 pub use company_industry_bulk::CompanyIndustryBulkService;
 pub use department_bulk::DepartmentBulkService;
 pub use industry_bulk::IndustryBulkService;
+pub use level_bulk::LevelBulkService;
+pub use position_bulk::PositionBulkService;
+pub use structure_bulk::StructureBulkService;
 
 // <<< CUSTOM
 // END CUSTOM

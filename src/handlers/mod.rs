@@ -14,6 +14,9 @@ use crate::application::service::CompanyService;
 use crate::application::service::CompanyIndustryService;
 use crate::application::service::DepartmentService;
 use crate::application::service::IndustryService;
+use crate::application::service::LevelService;
+use crate::application::service::PositionService;
+use crate::application::service::StructureService;
 
 /// Application state for dependency injection.
 ///
@@ -43,6 +46,12 @@ pub struct AppState {
     pub department_service: Arc<DepartmentService>,
     /// Industry service
     pub industry_service: Arc<IndustryService>,
+    /// Level service
+    pub level_service: Arc<LevelService>,
+    /// Position service
+    pub position_service: Arc<PositionService>,
+    /// Structure service
+    pub structure_service: Arc<StructureService>,
 }
 
 impl AppState {
@@ -52,7 +61,10 @@ impl AppState {
         company_service: Arc<CompanyService>,
         company_industry_service: Arc<CompanyIndustryService>,
         department_service: Arc<DepartmentService>,
-        industry_service: Arc<IndustryService>
+        industry_service: Arc<IndustryService>,
+        level_service: Arc<LevelService>,
+        position_service: Arc<PositionService>,
+        structure_service: Arc<StructureService>
     ) -> Self {
         Self {
             branch_service,
@@ -60,6 +72,9 @@ impl AppState {
             company_industry_service,
             department_service,
             industry_service,
+            level_service,
+            position_service,
+            structure_service,
         }
     }
 
@@ -71,6 +86,9 @@ impl AppState {
             company_industry_service: module.company_industry_service.clone(),
             department_service: module.department_service.clone(),
             industry_service: module.industry_service.clone(),
+            level_service: module.level_service.clone(),
+            position_service: module.position_service.clone(),
+            structure_service: module.structure_service.clone(),
         }
     }
 }
@@ -85,6 +103,9 @@ pub struct AppStateBuilder {
     company_industry_service: Option<Arc<CompanyIndustryService>>,
     department_service: Option<Arc<DepartmentService>>,
     industry_service: Option<Arc<IndustryService>>,
+    level_service: Option<Arc<LevelService>>,
+    position_service: Option<Arc<PositionService>>,
+    structure_service: Option<Arc<StructureService>>,
 }
 
 impl AppStateBuilder {
@@ -123,6 +144,24 @@ impl AppStateBuilder {
         self
     }
 
+    /// Set the Level service.
+    pub fn with_level_service(mut self, service: Arc<LevelService>) -> Self {
+        self.level_service = Some(service);
+        self
+    }
+
+    /// Set the Position service.
+    pub fn with_position_service(mut self, service: Arc<PositionService>) -> Self {
+        self.position_service = Some(service);
+        self
+    }
+
+    /// Set the Structure service.
+    pub fn with_structure_service(mut self, service: Arc<StructureService>) -> Self {
+        self.structure_service = Some(service);
+        self
+    }
+
     /// Build the AppState.
     ///
     /// # Panics
@@ -135,6 +174,9 @@ impl AppStateBuilder {
             company_industry_service: self.company_industry_service.expect("company_industry_service is required"),
             department_service: self.department_service.expect("department_service is required"),
             industry_service: self.industry_service.expect("industry_service is required"),
+            level_service: self.level_service.expect("level_service is required"),
+            position_service: self.position_service.expect("position_service is required"),
+            structure_service: self.structure_service.expect("structure_service is required"),
         }
     }
 }

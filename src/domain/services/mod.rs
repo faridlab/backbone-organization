@@ -7,12 +7,18 @@ pub mod company_domain_policy;
 pub mod company_industry_domain_policy;
 pub mod department_domain_policy;
 pub mod industry_domain_policy;
+pub mod level_domain_policy;
+pub mod position_domain_policy;
+pub mod structure_domain_policy;
 
 pub use branch_domain_policy::BranchDomainPolicy;
 pub use company_domain_policy::CompanyDomainPolicy;
 pub use company_industry_domain_policy::CompanyIndustryDomainPolicy;
 pub use department_domain_policy::DepartmentDomainPolicy;
 pub use industry_domain_policy::IndustryDomainPolicy;
+pub use level_domain_policy::LevelDomainPolicy;
+pub use position_domain_policy::PositionDomainPolicy;
+pub use structure_domain_policy::StructureDomainPolicy;
 
 // <<< CUSTOM
 // END CUSTOM

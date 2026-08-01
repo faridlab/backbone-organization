@@ -7,12 +7,18 @@ pub mod company_auth;
 pub mod company_industry_auth;
 pub mod department_auth;
 pub mod industry_auth;
+pub mod level_auth;
+pub mod position_auth;
+pub mod structure_auth;
 
 pub use branch_auth::{BranchPolicy, BranchGuard, BranchServiceGuard};
 pub use company_auth::{CompanyPolicy, CompanyGuard, CompanyServiceGuard};
 pub use company_industry_auth::{CompanyIndustryPolicy, CompanyIndustryGuard, CompanyIndustryServiceGuard};
 pub use department_auth::{DepartmentPolicy, DepartmentGuard, DepartmentServiceGuard};
 pub use industry_auth::{IndustryPolicy, IndustryGuard, IndustryServiceGuard};
+pub use level_auth::{LevelPolicy, LevelGuard, LevelServiceGuard};
+pub use position_auth::{PositionPolicy, PositionGuard, PositionServiceGuard};
+pub use structure_auth::{StructurePolicy, StructureGuard, StructureServiceGuard};
 
 // <<< CUSTOM
 // END CUSTOM

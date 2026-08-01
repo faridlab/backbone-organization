@@ -10,11 +10,16 @@ pub mod company_handler;
 pub mod company_industry_handler;
 pub mod department_handler;
 pub mod industry_handler;
-
 // <<< CUSTOM
 pub mod onboarding_handler;
 pub mod guarded_routes;
 pub mod hierarchy_handler;
+// END CUSTOM
+pub mod level_handler;
+pub mod position_handler;
+pub mod structure_handler;
+
+// <<< CUSTOM
 // END CUSTOM
 
 // Re-exports
@@ -27,4 +32,9 @@ pub use industry_handler::{create_industry_routes, create_industry_read_routes, 
 pub use onboarding_handler::{create_onboarding_routes, create_organization_routes};
 pub use guarded_routes::{create_guarded_organization_routes, create_guarded_organization_routes_checked, require_known_company};
 pub use hierarchy_handler::create_hierarchy_routes;
+// END CUSTOM
+pub use level_handler::{create_level_routes, create_level_read_routes, create_level_write_routes};
+pub use position_handler::{create_position_routes, create_position_read_routes, create_position_write_routes};
+pub use structure_handler::{create_structure_routes, create_structure_read_routes, create_structure_write_routes};
+// <<< CUSTOM
 // END CUSTOM

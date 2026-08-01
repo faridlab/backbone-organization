@@ -12,3 +12,8 @@
 - company_seed
 - department_seed
 - company_industry_seed
+
+# Newly added seeds (preserve manual order above):
+- position_seed
+- structure_seed
+- level_seed

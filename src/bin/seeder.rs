@@ -17,6 +17,9 @@ use backbone_organization::seeders::SeedCompanySeeder;
 use backbone_organization::seeders::SeedCompanyIndustrySeeder;
 use backbone_organization::seeders::SeedDepartmentSeeder;
 use backbone_organization::seeders::SeedIndustrySeeder;
+use backbone_organization::seeders::SeedLevelSeeder;
+use backbone_organization::seeders::SeedPositionSeeder;
+use backbone_organization::seeders::SeedStructureSeeder;
 use backbone_organization::seeders::Seeder;
 
 #[tokio::main]
@@ -50,6 +53,9 @@ async fn main() -> Result<()> {
     seeders.push(Box::new(SeedCompanyIndustrySeeder::new()));
     seeders.push(Box::new(SeedDepartmentSeeder::new()));
     seeders.push(Box::new(SeedIndustrySeeder::new()));
+    seeders.push(Box::new(SeedLevelSeeder::new()));
+    seeders.push(Box::new(SeedPositionSeeder::new()));
+    seeders.push(Box::new(SeedStructureSeeder::new()));
 
     // Sort by order
     seeders.sort_by_key(|s| s.order());

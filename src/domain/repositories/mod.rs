@@ -11,6 +11,9 @@ pub mod company_repository;
 pub mod company_industry_repository;
 pub mod department_repository;
 pub mod industry_repository;
+pub mod level_repository;
+pub mod position_repository;
+pub mod structure_repository;
 
 // Re-exports
 pub use branch_repository::{
@@ -42,4 +45,22 @@ pub use industry_repository::{
     IndustryPaginationParams,
     IndustryPaginatedResult,
     IndustryFilter,
+};
+pub use level_repository::{
+    LevelRepository,
+    LevelPaginationParams,
+    LevelPaginatedResult,
+    LevelFilter,
+};
+pub use position_repository::{
+    PositionRepository,
+    PositionPaginationParams,
+    PositionPaginatedResult,
+    PositionFilter,
+};
+pub use structure_repository::{
+    StructureRepository,
+    StructurePaginationParams,
+    StructurePaginatedResult,
+    StructureFilter,
 };

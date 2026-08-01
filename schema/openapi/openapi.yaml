@@ -21,6 +21,12 @@ tags:
     description: Department management endpoints
   - name: Industries
     description: Industry management endpoints
+  - name: Levels
+    description: Level management endpoints
+  - name: Positions
+    description: Position management endpoints
+  - name: Structures
+    description: Structure management endpoints
 
 paths:
   /api/v1/branches:
@@ -1853,6 +1859,1104 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  /api/v1/levels:
+    get:
+      tags:
+        - Levels
+      summary: List Levels
+      description: Get a paginated list of Levels with optional filtering and sorting
+      operationId: listLevels
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Levels
+      summary: Create Level
+      description: Create a new Level
+      operationId: createLevel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLevelRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Level'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/levels/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - Levels
+      summary: Get Level by ID
+      operationId: getLevel
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Level'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Levels
+      summary: Update Level (full)
+      operationId: updateLevel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLevelRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Level'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Levels
+      summary: Update Level (partial)
+      operationId: patchLevel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchLevelRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Level'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Levels
+      summary: Delete Level (soft)
+      operationId: deleteLevel
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/levels/bulk:
+    post:
+      tags:
+        - Levels
+      summary: Bulk create Levels
+      operationId: bulkCreateLevels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateLevelRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Level'
+    put:
+      tags:
+        - Levels
+      summary: Bulk update Levels (full, atomic)
+      operationId: bulkUpdateLevels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateLevelRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - Levels
+      summary: Bulk partial-update Levels (atomic)
+      operationId: bulkPatchLevels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/levels/upsert:
+    post:
+      tags:
+        - Levels
+      summary: Upsert Level
+      operationId: upsertLevel
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLevelRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Level'
+
+  /api/v1/levels/trash:
+    get:
+      tags:
+        - Levels
+      summary: List deleted Levels
+      operationId: listDeletedLevels
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelList'
+
+  /api/v1/levels/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - Levels
+      summary: Restore deleted Level
+      operationId: restoreLevel
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Level'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/levels/empty:
+    delete:
+      tags:
+        - Levels
+      summary: Empty trash for Levels
+      operationId: emptyTrashLevels
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/levels/delete/bulk:
+    post:
+      tags:
+        - Levels
+      summary: Bulk soft-delete Levels by ids (atomic)
+      operationId: bulkDeleteLevels
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/levels/restore/bulk:
+    post:
+      tags:
+        - Levels
+      summary: Bulk restore Levels by ids (atomic)
+      operationId: bulkRestoreLevels
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/levels/restore/all:
+    post:
+      tags:
+        - Levels
+      summary: Restore all soft-deleted Levels
+      operationId: restoreAllLevels
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/levels/trash/bulk:
+    delete:
+      tags:
+        - Levels
+      summary: Bulk permanently-delete Levels from trash by ids (atomic)
+      operationId: bulkPermanentDeleteLevels
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/positions:
+    get:
+      tags:
+        - Positions
+      summary: List Positions
+      description: Get a paginated list of Positions with optional filtering and sorting
+      operationId: listPositions
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Positions
+      summary: Create Position
+      description: Create a new Position
+      operationId: createPosition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePositionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/positions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - Positions
+      summary: Get Position by ID
+      operationId: getPosition
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Positions
+      summary: Update Position (full)
+      operationId: updatePosition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePositionRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Positions
+      summary: Update Position (partial)
+      operationId: patchPosition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchPositionRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Positions
+      summary: Delete Position (soft)
+      operationId: deletePosition
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/positions/bulk:
+    post:
+      tags:
+        - Positions
+      summary: Bulk create Positions
+      operationId: bulkCreatePositions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreatePositionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Position'
+    put:
+      tags:
+        - Positions
+      summary: Bulk update Positions (full, atomic)
+      operationId: bulkUpdatePositions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdatePositionRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - Positions
+      summary: Bulk partial-update Positions (atomic)
+      operationId: bulkPatchPositions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/positions/upsert:
+    post:
+      tags:
+        - Positions
+      summary: Upsert Position
+      operationId: upsertPosition
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePositionRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+
+  /api/v1/positions/trash:
+    get:
+      tags:
+        - Positions
+      summary: List deleted Positions
+      operationId: listDeletedPositions
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionList'
+
+  /api/v1/positions/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - Positions
+      summary: Restore deleted Position
+      operationId: restorePosition
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/positions/empty:
+    delete:
+      tags:
+        - Positions
+      summary: Empty trash for Positions
+      operationId: emptyTrashPositions
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/positions/delete/bulk:
+    post:
+      tags:
+        - Positions
+      summary: Bulk soft-delete Positions by ids (atomic)
+      operationId: bulkDeletePositions
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/positions/restore/bulk:
+    post:
+      tags:
+        - Positions
+      summary: Bulk restore Positions by ids (atomic)
+      operationId: bulkRestorePositions
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/positions/restore/all:
+    post:
+      tags:
+        - Positions
+      summary: Restore all soft-deleted Positions
+      operationId: restoreAllPositions
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/positions/trash/bulk:
+    delete:
+      tags:
+        - Positions
+      summary: Bulk permanently-delete Positions from trash by ids (atomic)
+      operationId: bulkPermanentDeletePositions
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/structures:
+    get:
+      tags:
+        - Structures
+      summary: List Structures
+      description: Get a paginated list of Structures with optional filtering and sorting
+      operationId: listStructures
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Structures
+      summary: Create Structure
+      description: Create a new Structure
+      operationId: createStructure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStructureRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Structure'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/structures/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - Structures
+      summary: Get Structure by ID
+      operationId: getStructure
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Structure'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Structures
+      summary: Update Structure (full)
+      operationId: updateStructure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStructureRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Structure'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Structures
+      summary: Update Structure (partial)
+      operationId: patchStructure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchStructureRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Structure'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Structures
+      summary: Delete Structure (soft)
+      operationId: deleteStructure
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/structures/bulk:
+    post:
+      tags:
+        - Structures
+      summary: Bulk create Structures
+      operationId: bulkCreateStructures
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateStructureRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Structure'
+    put:
+      tags:
+        - Structures
+      summary: Bulk update Structures (full, atomic)
+      operationId: bulkUpdateStructures
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateStructureRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - Structures
+      summary: Bulk partial-update Structures (atomic)
+      operationId: bulkPatchStructures
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/structures/upsert:
+    post:
+      tags:
+        - Structures
+      summary: Upsert Structure
+      operationId: upsertStructure
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStructureRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Structure'
+
+  /api/v1/structures/trash:
+    get:
+      tags:
+        - Structures
+      summary: List deleted Structures
+      operationId: listDeletedStructures
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureList'
+
+  /api/v1/structures/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - Structures
+      summary: Restore deleted Structure
+      operationId: restoreStructure
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Structure'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/structures/empty:
+    delete:
+      tags:
+        - Structures
+      summary: Empty trash for Structures
+      operationId: emptyTrashStructures
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/structures/delete/bulk:
+    post:
+      tags:
+        - Structures
+      summary: Bulk soft-delete Structures by ids (atomic)
+      operationId: bulkDeleteStructures
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/structures/restore/bulk:
+    post:
+      tags:
+        - Structures
+      summary: Bulk restore Structures by ids (atomic)
+      operationId: bulkRestoreStructures
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StructureBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/structures/restore/all:
+    post:
+      tags:
+        - Structures
+      summary: Restore all soft-deleted Structures
+      operationId: restoreAllStructures
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/structures/trash/bulk:
+    delete:
+      tags:
+        - Structures
+      summary: Bulk permanently-delete Structures from trash by ids (atomic)
+      operationId: bulkPermanentDeleteStructures
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
 components:
   schemas:
     Branch:
@@ -2876,6 +3980,363 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Industry'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    Level:
+      type: object
+      required:
+        - id
+        - company_id
+        - name
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        grade:
+          nullable: true
+          type: string
+          maxLength: 20
+        order_number:
+          nullable: true
+          type: integer
+          format: int32
+        metadata:
+          type: object
+
+    LevelBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Level'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateLevelRequest:
+      type: object
+      required:
+        - company_id
+        - name
+        - metadata
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        grade:
+          nullable: true
+          type: string
+          maxLength: 20
+        order_number:
+          nullable: true
+          type: integer
+          format: int32
+        metadata:
+          type: object
+
+    UpdateLevelRequest:
+      type: object
+      required:
+        - company_id
+        - name
+        - metadata
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        grade:
+          nullable: true
+          type: string
+          maxLength: 20
+        order_number:
+          nullable: true
+          type: integer
+          format: int32
+        metadata:
+          type: object
+
+    PatchLevelRequest:
+      type: object
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        grade:
+          nullable: true
+          type: string
+          maxLength: 20
+        order_number:
+          nullable: true
+          type: integer
+          format: int32
+        metadata:
+          type: object
+
+    LevelList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Level'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    Position:
+      type: object
+      required:
+        - id
+        - company_id
+        - name
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        code:
+          nullable: true
+          type: string
+          maxLength: 30
+        description:
+          nullable: true
+          type: string
+          maxLength: 1000
+        metadata:
+          type: object
+
+    PositionBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreatePositionRequest:
+      type: object
+      required:
+        - company_id
+        - name
+        - metadata
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        code:
+          nullable: true
+          type: string
+          maxLength: 30
+        description:
+          nullable: true
+          type: string
+          maxLength: 1000
+        metadata:
+          type: object
+
+    UpdatePositionRequest:
+      type: object
+      required:
+        - company_id
+        - name
+        - metadata
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        code:
+          nullable: true
+          type: string
+          maxLength: 30
+        description:
+          nullable: true
+          type: string
+          maxLength: 1000
+        metadata:
+          type: object
+
+    PatchPositionRequest:
+      type: object
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        code:
+          nullable: true
+          type: string
+          maxLength: 30
+        description:
+          nullable: true
+          type: string
+          maxLength: 1000
+        metadata:
+          type: object
+
+    PositionList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    Structure:
+      type: object
+      required:
+        - id
+        - company_id
+        - name
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        parent_id:
+          nullable: true
+          type: string
+          format: uuid
+        manager_id:
+          nullable: true
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    StructureBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Structure'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateStructureRequest:
+      type: object
+      required:
+        - company_id
+        - name
+        - metadata
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        parent_id:
+          nullable: true
+          type: string
+          format: uuid
+        manager_id:
+          nullable: true
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    UpdateStructureRequest:
+      type: object
+      required:
+        - company_id
+        - name
+        - metadata
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        parent_id:
+          nullable: true
+          type: string
+          format: uuid
+        manager_id:
+          nullable: true
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    PatchStructureRequest:
+      type: object
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        parent_id:
+          nullable: true
+          type: string
+          format: uuid
+        manager_id:
+          nullable: true
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    StructureList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Structure'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
 

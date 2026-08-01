@@ -146,6 +146,87 @@ pub struct IndustryDeletedEvent {
 }
 
 // ============================================================================
+// LEVEL EVENTS
+// ============================================================================
+
+/// Event published when a Level is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LevelCreatedEvent {
+    pub id: LevelId,
+    pub data: LevelDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Level is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LevelUpdatedEvent {
+    pub id: LevelId,
+    pub data: LevelDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Level is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LevelDeletedEvent {
+    pub id: LevelId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// POSITION EVENTS
+// ============================================================================
+
+/// Event published when a Position is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PositionCreatedEvent {
+    pub id: PositionId,
+    pub data: PositionDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Position is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PositionUpdatedEvent {
+    pub id: PositionId,
+    pub data: PositionDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Position is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PositionDeletedEvent {
+    pub id: PositionId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// STRUCTURE EVENTS
+// ============================================================================
+
+/// Event published when a Structure is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StructureCreatedEvent {
+    pub id: StructureId,
+    pub data: StructureDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Structure is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StructureUpdatedEvent {
+    pub id: StructureId,
+    pub data: StructureDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Structure is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StructureDeletedEvent {
+    pub id: StructureId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
 // MODULE EVENT ENUM
 // ============================================================================
 
@@ -168,6 +249,15 @@ pub enum OrganizationEvent {
     IndustryCreated(IndustryCreatedEvent),
     IndustryUpdated(IndustryUpdatedEvent),
     IndustryDeleted(IndustryDeletedEvent),
+    LevelCreated(LevelCreatedEvent),
+    LevelUpdated(LevelUpdatedEvent),
+    LevelDeleted(LevelDeletedEvent),
+    PositionCreated(PositionCreatedEvent),
+    PositionUpdated(PositionUpdatedEvent),
+    PositionDeleted(PositionDeletedEvent),
+    StructureCreated(StructureCreatedEvent),
+    StructureUpdated(StructureUpdatedEvent),
+    StructureDeleted(StructureDeletedEvent),
 }
 
 /// Metadata for module events

@@ -65,3 +65,9 @@ imports:
   - department.model.yaml
   - industry.model.yaml
   - company_industry.model.yaml
+  # Phase 0 / org-readiness — reference masters consumed by
+  # backbone-employee.employments (position_id/level_id), backbone-calendar,
+  # and backbone-schedule.schedule_organizations.structure_id.
+  - position.model.yaml
+  - level.model.yaml
+  - structure.model.yaml

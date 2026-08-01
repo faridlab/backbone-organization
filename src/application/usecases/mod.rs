@@ -12,6 +12,9 @@ pub mod company_usecases;
 pub mod company_industry_usecases;
 pub mod department_usecases;
 pub mod industry_usecases;
+pub mod level_usecases;
+pub mod position_usecases;
+pub mod structure_usecases;
 
 pub use branch_usecases::{
     CreateBranchUseCase, UpdateBranchUseCase, GetBranchUseCase,
@@ -32,6 +35,18 @@ pub use department_usecases::{
 pub use industry_usecases::{
     CreateIndustryUseCase, UpdateIndustryUseCase, GetIndustryUseCase,
     DeleteIndustryUseCase, ListIndustryUseCase,
+};
+pub use level_usecases::{
+    CreateLevelUseCase, UpdateLevelUseCase, GetLevelUseCase,
+    DeleteLevelUseCase, ListLevelUseCase,
+};
+pub use position_usecases::{
+    CreatePositionUseCase, UpdatePositionUseCase, GetPositionUseCase,
+    DeletePositionUseCase, ListPositionUseCase,
+};
+pub use structure_usecases::{
+    CreateStructureUseCase, UpdateStructureUseCase, GetStructureUseCase,
+    DeleteStructureUseCase, ListStructureUseCase,
 };
 
 // <<< CUSTOM
