@@ -219,9 +219,9 @@ fn build_forest(rows: Vec<DepartmentHierarchyRow>) -> Vec<DepartmentNode> {
     let mut roots: Vec<Uuid> = Vec::new();
     for r in rows {
         let id = r.id;
-        let parent_present = matches!(r.parent_id, Some(pid) if by_id.contains_key(&pid));
-        if parent_present {
-            children.entry(r.parent_id.unwrap()).or_default().push(id);
+        // A parent that is missing from the set (dangling) is treated as a root.
+        if let Some(pid) = r.parent_id.filter(|pid| by_id.contains_key(pid)) {
+            children.entry(pid).or_default().push(id);
         } else {
             roots.push(id);
         }
