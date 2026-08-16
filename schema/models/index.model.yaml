@@ -10,6 +10,15 @@
 module: organization
 version: 2
 schema: organization
+# ADR-0014 fence posture: shared_tree — a session rooted at a company sees this
+# module's rows for the company's whole SUBTREE (via organization.company_subtree()
+# over companies(parent_company_id)), not just its own company_id. Chosen over
+# strict because the org tree is inherently hierarchical: multi-company groups
+# are the norm, and a parent company's admins manage descendants' branches/
+# departments/structures (recurring-themes C2/C3). companies and industries
+# carry no company_id — they ARE the tree / a public classification (Odoo base
+# posture) — and stay intentionally unfenced under any declaration.
+company_fence: shared_tree
 description: "Foundation org structure: Company (books owner), Branch, Department (Indonesia-first)"
 
 config:
