@@ -260,3 +260,79 @@ async fn body_company_id_cannot_override_the_token_tenant() {
     assert_eq!(dpersisted, token_company, "tenant must come from the token, not the body");
     assert_ne!(dpersisted, attacker_company, "the body's companyId must be ignored");
 }
+
+// IGC-5: onboarding must pass the RLS fence as a NON-OWNER role. The head-office branch table is
+// FORCE row-level-security fenced (company subtree of the session's bound company) and the onboard
+// flow runs before any tenant exists — every other probe runs on the owner DSN, and the table
+// owner BYPASSES row-level security, so an unscoped branch insert passed them all while failing
+// (500) on any app-style role. The service binds the freshly minted company onto the transaction;
+// this probe fails if that binding is ever lost. Requires the fence migrations to be applied and
+// DATABASE_URL to be a role that may CREATE ROLE (the dev owner DSN qualifies).
+#[tokio::test]
+async fn onboard_passes_rls_as_non_owner_role() {
+    const ROLE: &str = "org_rls_probe";
+    const PW: &str = "org_rls_probe_pw";
+    let admin = pool().await;
+
+    // Precondition: the probe only means something when the branch fence is live.
+    let fenced: bool = sqlx::query_scalar(
+        "SELECT relforcerowsecurity FROM pg_class WHERE oid = 'organization.branches'::regclass",
+    )
+    .fetch_one(&admin)
+    .await
+    .unwrap();
+    assert!(
+        fenced,
+        "organization.branches must have FORCE RLS for this probe to mean anything"
+    );
+
+    sqlx::raw_sql(&format!(
+        "DO $$ BEGIN \
+           IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{ROLE}') THEN \
+             EXECUTE 'DROP OWNED BY {ROLE}'; \
+           END IF; \
+         END $$; \
+         DROP ROLE IF EXISTS {ROLE}; \
+         CREATE ROLE {ROLE} LOGIN PASSWORD '{PW}'; \
+         GRANT USAGE ON SCHEMA organization TO {ROLE}; \
+         GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA organization TO {ROLE};"
+    ))
+    .execute(&admin)
+    .await
+    .expect("probe role bootstrap needs an owner-capable DATABASE_URL");
+
+    let after_at = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5433/backbone_organization".to_string());
+    let after_at = after_at.rsplit('@').next().unwrap();
+    let app_pool = PgPool::connect(&format!("postgresql://{ROLE}:{PW}@{after_at}")).await.unwrap();
+
+    // Onboarding is unauthenticated by design — it creates the tenant. No bearer token.
+    let onboard_code = code("RLSON");
+    let body = format!(
+        r#"{{"code":"{onboard_code}","legal_name":"PT Rls Onboard","base_currency":"IDR"}}"#
+    );
+    let (status, resp) =
+        send_with(app(&module(&app_pool).await), "POST", "/companies/onboard", &body, None).await;
+    assert_eq!(
+        status,
+        StatusCode::CREATED,
+        "onboard must pass the branch fence as a non-owner role; got {status}: {resp}"
+    );
+
+    // The head-office branch landed and belongs to the company it created.
+    let branch_company: Uuid = sqlx::query_scalar(
+        "SELECT b.company_id FROM organization.branches b \
+         JOIN organization.companies c ON c.id = b.company_id \
+         WHERE c.code = $1",
+    )
+    .bind(&onboard_code)
+    .fetch_one(&admin)
+    .await
+    .expect("head-office branch row for the onboarded company");
+    let company: Uuid = sqlx::query_scalar("SELECT id FROM organization.companies WHERE code = $1")
+        .bind(&onboard_code)
+        .fetch_one(&admin)
+        .await
+        .unwrap();
+    assert_eq!(branch_company, company, "the head-office branch must sit in its own company");
+}

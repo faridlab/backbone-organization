@@ -176,6 +176,14 @@ impl OnboardingService {
         }
         company_insert?;
 
+        // companies carries no company_id and is intentionally unfenced, but the head-office
+        // branch insert below is fenced (subtree of the session's bound company) — and
+        // onboarding has no ambient tenant, it *creates* one. Bind the freshly minted company
+        // onto the transaction so the branch insert passes the fence's WITH CHECK. Without
+        // this the flow only worked on connections that bypass row-level security (the table
+        // owner); any app-role connection failed the branch insert.
+        backbone_orm::company_scope::bind_company_on(&mut tx, company_id).await?;
+
         let hq_branch_id = Uuid::new_v4();
         let branch_code = req.hq_branch_code.clone().unwrap_or_else(|| "HQ".to_string());
         let branch_name = req.hq_branch_name.clone().unwrap_or_else(|| "Head Office".to_string());
