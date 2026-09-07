@@ -78,7 +78,7 @@ pub struct Company {
 impl Company {
     /// Create a builder for Company
     pub fn builder() -> CompanyBuilder {
-        CompanyBuilder::default()
+        <CompanyBuilder as Default>::default()
     }
 
     /// Create a new Company with required fields
@@ -522,7 +522,7 @@ impl CompanyBuilder {
             trade_name: self.trade_name,
             npwp: self.npwp,
             nib: self.nib,
-            entity_type: self.entity_type.unwrap_or(CompanyEntityType::default()),
+            entity_type: self.entity_type.unwrap_or_default(),
             base_currency: self.base_currency.unwrap_or("IDR".to_string()),
             fiscal_year_start_month: self.fiscal_year_start_month.unwrap_or(1),
             email: self.email,
@@ -534,7 +534,7 @@ impl CompanyBuilder {
             country: self.country.unwrap_or("ID".to_string()),
             parent_company_id: self.parent_company_id,
             is_default: self.is_default.unwrap_or(false),
-            status: self.status.unwrap_or(CompanyStatus::default()),
+            status: self.status.unwrap_or_default(),
             notes: self.notes,
             metadata: AuditMetadata::default(),
         })

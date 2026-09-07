@@ -11,6 +11,7 @@ pub mod company_industry_dto;
 pub mod department_dto;
 pub mod industry_dto;
 pub mod level_dto;
+pub mod org_unit_dto;
 pub mod position_dto;
 pub mod structure_dto;
 
@@ -62,6 +63,14 @@ pub use level_dto::{
     LevelResponseDto,
     LevelListResponseDto,
     LevelSummaryDto,
+};
+pub use org_unit_dto::{
+    CreateOrgUnitDto,
+    UpdateOrgUnitDto,
+    PatchOrgUnitDto,
+    OrgUnitResponseDto,
+    OrgUnitListResponseDto,
+    OrgUnitSummaryDto,
 };
 pub use position_dto::{
     CreatePositionDto,

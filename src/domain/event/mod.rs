@@ -14,6 +14,8 @@ pub mod industry_events;
 pub mod industry_event_handlers;
 pub mod level_events;
 pub mod level_event_handlers;
+pub mod org_unit_events;
+pub mod org_unit_event_handlers;
 pub mod position_events;
 pub mod position_event_handlers;
 pub mod structure_events;
@@ -31,6 +33,8 @@ pub use industry_events::{IndustryEvent, IndustryEventPublisher, NoopIndustryEve
 pub use industry_event_handlers::IndustryEventHandler;
 pub use level_events::{LevelEvent, LevelEventPublisher, NoopLevelEventPublisher};
 pub use level_event_handlers::LevelEventHandler;
+pub use org_unit_events::{OrgUnitEvent, OrgUnitEventPublisher, NoopOrgUnitEventPublisher};
+pub use org_unit_event_handlers::OrgUnitEventHandler;
 pub use position_events::{PositionEvent, PositionEventPublisher, NoopPositionEventPublisher};
 pub use position_event_handlers::PositionEventHandler;
 pub use structure_events::{StructureEvent, StructureEventPublisher, NoopStructureEventPublisher};

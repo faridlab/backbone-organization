@@ -275,4 +275,3 @@ impl backbone_core::ApplyUpdateDto<UpdateIndustryDto> for Industry {
 // Add custom DTOs specific to Industry here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
-

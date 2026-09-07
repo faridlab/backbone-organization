@@ -268,4 +268,3 @@ impl backbone_core::ApplyUpdateDto<UpdateLevelDto> for Level {
 // Add custom DTOs specific to Level here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
-

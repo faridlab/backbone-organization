@@ -173,6 +173,33 @@ pub struct LevelDeletedEvent {
 }
 
 // ============================================================================
+// ORGUNIT EVENTS
+// ============================================================================
+
+/// Event published when a OrgUnit is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgUnitCreatedEvent {
+    pub id: OrgUnitId,
+    pub data: OrgUnitDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a OrgUnit is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgUnitUpdatedEvent {
+    pub id: OrgUnitId,
+    pub data: OrgUnitDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a OrgUnit is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgUnitDeletedEvent {
+    pub id: OrgUnitId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
 // POSITION EVENTS
 // ============================================================================
 
@@ -252,6 +279,9 @@ pub enum OrganizationEvent {
     LevelCreated(LevelCreatedEvent),
     LevelUpdated(LevelUpdatedEvent),
     LevelDeleted(LevelDeletedEvent),
+    OrgUnitCreated(OrgUnitCreatedEvent),
+    OrgUnitUpdated(OrgUnitUpdatedEvent),
+    OrgUnitDeleted(OrgUnitDeletedEvent),
     PositionCreated(PositionCreatedEvent),
     PositionUpdated(PositionUpdatedEvent),
     PositionDeleted(PositionDeletedEvent),

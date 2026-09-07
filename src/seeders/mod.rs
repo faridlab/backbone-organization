@@ -15,6 +15,7 @@ mod company_industry_seeder;
 mod department_seeder;
 mod industry_seeder;
 mod level_seeder;
+mod org_unit_seeder;
 mod position_seeder;
 mod structure_seeder;
 
@@ -24,6 +25,7 @@ pub use company_industry_seeder::SeedCompanyIndustrySeeder;
 pub use department_seeder::SeedDepartmentSeeder;
 pub use industry_seeder::SeedIndustrySeeder;
 pub use level_seeder::SeedLevelSeeder;
+pub use org_unit_seeder::SeedOrgUnitSeeder;
 pub use position_seeder::SeedPositionSeeder;
 pub use structure_seeder::SeedStructureSeeder;
 
@@ -76,4 +78,3 @@ pub enum SeederType {
 // <<< CUSTOM SEEDERS START >>>
 // Add custom seeders here
 // <<< CUSTOM SEEDERS END >>>
-

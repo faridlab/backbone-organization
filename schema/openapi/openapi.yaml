@@ -23,6 +23,8 @@ tags:
     description: Industry management endpoints
   - name: Levels
     description: Level management endpoints
+  - name: OrgUnits
+    description: OrgUnit management endpoints
   - name: Positions
     description: Position management endpoints
   - name: Structures
@@ -2225,6 +2227,372 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  /api/v1/org_units:
+    get:
+      tags:
+        - OrgUnits
+      summary: List OrgUnits
+      description: Get a paginated list of OrgUnits with optional filtering and sorting
+      operationId: listOrgUnits
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnitList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - OrgUnits
+      summary: Create OrgUnit
+      description: Create a new OrgUnit
+      operationId: createOrgUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrgUnitRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/org_units/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - OrgUnits
+      summary: Get OrgUnit by ID
+      operationId: getOrgUnit
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnit'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - OrgUnits
+      summary: Update OrgUnit (full)
+      operationId: updateOrgUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrgUnitRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnit'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - OrgUnits
+      summary: Update OrgUnit (partial)
+      operationId: patchOrgUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchOrgUnitRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnit'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - OrgUnits
+      summary: Delete OrgUnit (soft)
+      operationId: deleteOrgUnit
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/org_units/bulk:
+    post:
+      tags:
+        - OrgUnits
+      summary: Bulk create OrgUnits
+      operationId: bulkCreateOrgUnits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateOrgUnitRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrgUnit'
+    put:
+      tags:
+        - OrgUnits
+      summary: Bulk update OrgUnits (full, atomic)
+      operationId: bulkUpdateOrgUnits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateOrgUnitRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnitBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - OrgUnits
+      summary: Bulk partial-update OrgUnits (atomic)
+      operationId: bulkPatchOrgUnits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnitBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/org_units/upsert:
+    post:
+      tags:
+        - OrgUnits
+      summary: Upsert OrgUnit
+      operationId: upsertOrgUnit
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrgUnitRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnit'
+
+  /api/v1/org_units/trash:
+    get:
+      tags:
+        - OrgUnits
+      summary: List deleted OrgUnits
+      operationId: listDeletedOrgUnits
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnitList'
+
+  /api/v1/org_units/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - OrgUnits
+      summary: Restore deleted OrgUnit
+      operationId: restoreOrgUnit
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnit'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/org_units/empty:
+    delete:
+      tags:
+        - OrgUnits
+      summary: Empty trash for OrgUnits
+      operationId: emptyTrashOrgUnits
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/org_units/delete/bulk:
+    post:
+      tags:
+        - OrgUnits
+      summary: Bulk soft-delete OrgUnits by ids (atomic)
+      operationId: bulkDeleteOrgUnits
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/org_units/restore/bulk:
+    post:
+      tags:
+        - OrgUnits
+      summary: Bulk restore OrgUnits by ids (atomic)
+      operationId: bulkRestoreOrgUnits
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgUnitBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/org_units/restore/all:
+    post:
+      tags:
+        - OrgUnits
+      summary: Restore all soft-deleted OrgUnits
+      operationId: restoreAllOrgUnits
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/org_units/trash/bulk:
+    delete:
+      tags:
+        - OrgUnits
+      summary: Bulk permanently-delete OrgUnits from trash by ids (atomic)
+      operationId: bulkPermanentDeleteOrgUnits
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /api/v1/positions:
     get:
       tags:
@@ -4099,6 +4467,121 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Level'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    OrgUnit:
+      type: object
+      required:
+        - id
+        - kind
+        - name
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        parent_id:
+          nullable: true
+          type: string
+          format: uuid
+        code:
+          nullable: true
+          type: string
+          maxLength: 30
+        name:
+          type: string
+          maxLength: 200
+        metadata:
+          type: object
+
+    OrgUnitBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgUnit'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateOrgUnitRequest:
+      type: object
+      required:
+        - kind
+        - name
+        - metadata
+      properties:
+        kind:
+          type: string
+        parent_id:
+          nullable: true
+          type: string
+          format: uuid
+        code:
+          nullable: true
+          type: string
+          maxLength: 30
+        name:
+          type: string
+          maxLength: 200
+        metadata:
+          type: object
+
+    UpdateOrgUnitRequest:
+      type: object
+      required:
+        - kind
+        - name
+        - metadata
+      properties:
+        kind:
+          type: string
+        parent_id:
+          nullable: true
+          type: string
+          format: uuid
+        code:
+          nullable: true
+          type: string
+          maxLength: 30
+        name:
+          type: string
+          maxLength: 200
+        metadata:
+          type: object
+
+    PatchOrgUnitRequest:
+      type: object
+      properties:
+        kind:
+          type: string
+        parent_id:
+          nullable: true
+          type: string
+          format: uuid
+        code:
+          nullable: true
+          type: string
+          maxLength: 30
+        name:
+          type: string
+          maxLength: 200
+        metadata:
+          type: object
+
+    OrgUnitList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgUnit'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
 

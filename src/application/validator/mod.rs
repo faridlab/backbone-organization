@@ -11,6 +11,7 @@ pub mod company_industry_validator;
 pub mod department_validator;
 pub mod industry_validator;
 pub mod level_validator;
+pub mod org_unit_validator;
 pub mod position_validator;
 pub mod structure_validator;
 
@@ -20,6 +21,7 @@ pub use company_industry_validator::{CompanyIndustryValidator, company_industry_
 pub use department_validator::{DepartmentValidator, department_validator};
 pub use industry_validator::{IndustryValidator, industry_validator};
 pub use level_validator::{LevelValidator, level_validator};
+pub use org_unit_validator::{OrgUnitValidator, org_unit_validator};
 pub use position_validator::{PositionValidator, position_validator};
 pub use structure_validator::{StructureValidator, structure_validator};
 

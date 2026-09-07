@@ -271,4 +271,3 @@ impl backbone_core::ApplyUpdateDto<UpdatePositionDto> for Position {
 // Add custom DTOs specific to Position here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
-

@@ -68,7 +68,7 @@ pub struct Department {
 impl Department {
     /// Create a builder for Department
     pub fn builder() -> DepartmentBuilder {
-        DepartmentBuilder::default()
+        <DepartmentBuilder as Default>::default()
     }
 
     /// Create a new Department with required fields
@@ -375,7 +375,7 @@ impl DepartmentBuilder {
             branch_id: self.branch_id,
             manager_id: self.manager_id,
             sort_order: self.sort_order.unwrap_or(0),
-            status: self.status.unwrap_or(OrgStatus::default()),
+            status: self.status.unwrap_or_default(),
             metadata: AuditMetadata::default(),
         })
     }

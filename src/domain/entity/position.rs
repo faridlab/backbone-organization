@@ -60,7 +60,7 @@ pub struct Position {
 impl Position {
     /// Create a builder for Position
     pub fn builder() -> PositionBuilder {
-        PositionBuilder::default()
+        <PositionBuilder as Default>::default()
     }
 
     /// Create a new Position with required fields

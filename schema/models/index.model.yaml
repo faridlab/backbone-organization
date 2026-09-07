@@ -70,6 +70,7 @@ shared_types:
 
 imports:
   - company.model.yaml
+  - org_unit.model.yaml
   - branch.model.yaml
   - department.model.yaml
   - industry.model.yaml

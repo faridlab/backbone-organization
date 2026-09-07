@@ -12,6 +12,7 @@ pub mod company_industry_specification;
 pub mod department_specification;
 pub mod industry_specification;
 pub mod level_specification;
+pub mod org_unit_specification;
 pub mod position_specification;
 pub mod structure_specification;
 

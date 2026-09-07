@@ -60,7 +60,7 @@ pub struct Level {
 impl Level {
     /// Create a builder for Level
     pub fn builder() -> LevelBuilder {
-        LevelBuilder::default()
+        <LevelBuilder as Default>::default()
     }
 
     /// Create a new Level with required fields

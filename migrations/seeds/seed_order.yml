@@ -17,3 +17,6 @@
 - position_seed
 - structure_seed
 - level_seed
+
+# Newly added seeds (preserve manual order above):
+- org_unit_seed

@@ -396,6 +396,64 @@ pub struct LevelRef {
 }
 
 // ============================================================================
+// ORGUNIT TYPES
+// ============================================================================
+
+/// Type-safe ID for OrgUnit
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct OrgUnitId(pub Uuid);
+
+impl OrgUnitId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for OrgUnitId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<OrgUnitId> for Uuid {
+    fn from(id: OrgUnitId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for OrgUnit
+///
+/// This is the public representation of OrgUnit for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgUnitDto {
+    pub id: OrgUnitId,
+    pub kind: OrgUnitKind,
+    pub parent_id: Option<Uuid>,
+    pub code: Option<String>,
+    pub name: String,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of OrgUnit for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgUnitSummary {
+    pub id: OrgUnitId,
+    pub name: String,
+}
+
+/// Reference to OrgUnit for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgUnitRef {
+    pub id: OrgUnitId,
+}
+
+// ============================================================================
 // POSITION TYPES
 // ============================================================================
 

@@ -64,7 +64,7 @@ pub struct Industry {
 impl Industry {
     /// Create a builder for Industry
     pub fn builder() -> IndustryBuilder {
-        IndustryBuilder::default()
+        <IndustryBuilder as Default>::default()
     }
 
     /// Create a new Industry with required fields
@@ -294,7 +294,7 @@ impl IndustryBuilder {
             name,
             sector,
             parent_id: self.parent_id,
-            status: self.status.unwrap_or(OrgStatus::default()),
+            status: self.status.unwrap_or_default(),
             metadata: AuditMetadata::default(),
         })
     }

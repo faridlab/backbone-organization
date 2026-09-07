@@ -73,7 +73,7 @@ pub struct Branch {
 impl Branch {
     /// Create a builder for Branch
     pub fn builder() -> BranchBuilder {
-        BranchBuilder::default()
+        <BranchBuilder as Default>::default()
     }
 
     /// Create a new Branch with required fields
@@ -440,7 +440,7 @@ impl BranchBuilder {
             company_id,
             code,
             name,
-            branch_type: self.branch_type.unwrap_or(BranchType::default()),
+            branch_type: self.branch_type.unwrap_or_default(),
             is_head_office: self.is_head_office.unwrap_or(false),
             npwp: self.npwp,
             email: self.email,
@@ -450,7 +450,7 @@ impl BranchBuilder {
             province: self.province,
             postal_code: self.postal_code,
             country: self.country.unwrap_or("ID".to_string()),
-            status: self.status.unwrap_or(OrgStatus::default()),
+            status: self.status.unwrap_or_default(),
             metadata: AuditMetadata::default(),
         })
     }

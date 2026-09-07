@@ -1,0 +1,78 @@
+# =============================================================================
+# Domain: Organization
+# Entity: OrgUnit
+# Description: The org-tree scoping spine (ADR-0028) — ONE tree per tenant
+# database: root (tenant-wide shared), company nodes (legal entity / books),
+# branch nodes (operating units, may chain through head offices). org_units
+# ids are STABLE: company and branch rows keep their existing companies.id /
+# branches.id UUIDs, so every logical `company_id` reference in consuming
+# modules already points at a valid node. Scoped modules reference this as
+# `org_unit_id` (logical FK — no cross-schema physical FK, per the promotion
+# contract; a consuming module's kind guard validates the node kind).
+#
+# The tree itself is intentionally UNFENCED (like companies before it): it is
+# the substrate the scope resolver reads on every request, inside the
+# tenant-isolated database (ADR-0027). Do not add a company fence here.
+# =============================================================================
+
+models:
+  - name: OrgUnit
+    collection: org_units
+    description: "Node in the tenant's organization tree — the scoping key every fenced table references (ADR-0028)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique org-unit identifier (companies and branches keep their existing UUIDs)"
+
+      kind:
+        type: OrgUnitKind
+        attributes: ["@required"]
+        description: "root = tenant-wide shared; company = legal entity (books); branch = operating unit"
+
+      parent_id:
+        type: uuid?
+        attributes: ["@foreign_key(OrgUnit.id)"]
+        description: "Parent node; NULL only for the root. Branches may chain through head-office nodes up to a company or a sister company in a group."
+
+      code:
+        type: string?
+        attributes: ["@max(30)"]
+        description: "Short code (mirrors the detail table's code for tree display)"
+
+      name:
+        type: string
+        attributes: ["@required", "@max(200)"]
+        description: "Display name (mirrors legal/trade/branch name)"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    indexes:
+      - type: unique
+        fields: [kind]
+        where: "kind = 'root'"
+        description: "Exactly one root node per tenant database"
+      - type: index
+        fields: [parent_id]
+      - type: index
+        fields: [kind]
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+enums:
+  - name: OrgUnitKind
+    description: "Org-tree node kinds (ADR-0028): which level of the tenant's organization a node represents"
+    variants:
+      - name: root
+        description: "Tenant-wide shared scope — the one node every session's entitlement includes"
+      - name: company
+        description: "Legal entity — books, fiscal identity, chart of accounts"
+        default: true
+      - name: branch
+        description: "Operating unit under a company (may chain through head offices)"

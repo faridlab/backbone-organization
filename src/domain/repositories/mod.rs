@@ -12,6 +12,7 @@ pub mod company_industry_repository;
 pub mod department_repository;
 pub mod industry_repository;
 pub mod level_repository;
+pub mod org_unit_repository;
 pub mod position_repository;
 pub mod structure_repository;
 
@@ -51,6 +52,12 @@ pub use level_repository::{
     LevelPaginationParams,
     LevelPaginatedResult,
     LevelFilter,
+};
+pub use org_unit_repository::{
+    OrgUnitRepository,
+    OrgUnitPaginationParams,
+    OrgUnitPaginatedResult,
+    OrgUnitFilter,
 };
 pub use position_repository::{
     PositionRepository,

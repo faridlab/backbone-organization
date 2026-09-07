@@ -60,7 +60,7 @@ pub struct Structure {
 impl Structure {
     /// Create a builder for Structure
     pub fn builder() -> StructureBuilder {
-        StructureBuilder::default()
+        <StructureBuilder as Default>::default()
     }
 
     /// Create a new Structure with required fields

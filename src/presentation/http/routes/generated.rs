@@ -15,6 +15,7 @@ use super::{
     department_handler::create_department_routes,
     industry_handler::create_industry_routes,
     level_handler::create_level_routes,
+    org_unit_handler::create_org_unit_routes,
     position_handler::create_position_routes,
     structure_handler::create_structure_routes,
 };
@@ -26,6 +27,7 @@ use crate::application::service::{
     DepartmentService,
     IndustryService,
     LevelService,
+    OrgUnitService,
     PositionService,
     StructureService,
 };
@@ -38,6 +40,7 @@ pub struct HttpServices {
     pub department: Arc<DepartmentService>,
     pub industry: Arc<IndustryService>,
     pub level: Arc<LevelService>,
+    pub org_unit: Arc<OrgUnitService>,
     pub position: Arc<PositionService>,
     pub structure: Arc<StructureService>,
 }
@@ -71,6 +74,8 @@ pub fn configure_routes(services: HttpServices) -> Router {
         .merge(create_industry_routes(services.industry))
         // Level routes (12 Backbone endpoints)
         .merge(create_level_routes(services.level))
+        // OrgUnit routes (12 Backbone endpoints)
+        .merge(create_org_unit_routes(services.org_unit))
         // Position routes (12 Backbone endpoints)
         .merge(create_position_routes(services.position))
         // Structure routes (12 Backbone endpoints)
@@ -103,6 +108,10 @@ pub mod individual {
 
     pub fn level_routes(service: Arc<LevelService>) -> Router {
         create_level_routes(service)
+    }
+
+    pub fn org_unit_routes(service: Arc<OrgUnitService>) -> Router {
+        create_org_unit_routes(service)
     }
 
     pub fn position_routes(service: Arc<PositionService>) -> Router {

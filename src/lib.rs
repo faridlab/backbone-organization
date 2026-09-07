@@ -49,6 +49,7 @@ pub use presentation::http::{
 };
 // END CUSTOM
 pub use application::service::LevelService;
+pub use application::service::OrgUnitService;
 pub use application::service::PositionService;
 pub use application::service::StructureService;
 
@@ -78,6 +79,7 @@ pub struct OrganizationModule {
     pub(crate) department_service: Arc<DepartmentService>,
     pub(crate) industry_service: Arc<IndustryService>,
     pub(crate) level_service: Arc<LevelService>,
+    pub(crate) org_unit_service: Arc<OrgUnitService>,
     pub(crate) position_service: Arc<PositionService>,
     pub(crate) structure_service: Arc<StructureService>,
     // <<< CUSTOM FIELDS
@@ -109,6 +111,7 @@ impl OrganizationModule {
             create_department_routes,
             create_industry_routes,
             create_level_routes,
+            create_org_unit_routes,
             create_position_routes,
             create_structure_routes,
         };
@@ -120,6 +123,7 @@ impl OrganizationModule {
             .merge(create_department_routes(self.department_service.clone()))
             .merge(create_industry_routes(self.industry_service.clone()))
             .merge(create_level_routes(self.level_service.clone()))
+            .merge(create_org_unit_routes(self.org_unit_service.clone()))
             .merge(create_position_routes(self.position_service.clone()))
             .merge(create_structure_routes(self.structure_service.clone()))
     }
@@ -129,10 +133,43 @@ impl OrganizationModule {
     /// mount exposes unguarded writes. Compose a guarded router (read + validated
     /// writes) for production, or call `all_crud_routes()` to opt into the full
     /// unguarded surface explicitly.
-    #[deprecated(note = "mounts unvalidated generic CRUD on every entity; compose a guarded router for production, or call all_crud_routes() for the intentional full/unguarded surface")]
+    #[deprecated(note = "mounts unvalidated generic CRUD; prefer readonly_routes() + validated writes, or all_crud_routes() for the full/unguarded surface")]
     pub fn routes(&self) -> Router {
         self.all_crud_routes()
     }
+
+    /// Read-only routes for every entity (GET endpoints only) — the safe base.
+    ///
+    /// Generic mutation can't reach here, so this surface cannot bypass a
+    /// validated write service's invariants. Use this as the production base and
+    /// merge validated write routes (or a write service's HTTP layer) onto it.
+    pub fn readonly_routes(&self) -> Router {
+        use presentation::http::{
+            create_branch_read_routes,
+            create_company_read_routes,
+            create_company_industry_read_routes,
+            create_department_read_routes,
+            create_industry_read_routes,
+            create_level_read_routes,
+            create_org_unit_read_routes,
+            create_position_read_routes,
+            create_structure_read_routes,
+        };
+
+        Router::new()
+            .merge(create_branch_read_routes(self.branch_service.clone()))
+            .merge(create_company_read_routes(self.company_service.clone()))
+            .merge(create_company_industry_read_routes(self.company_industry_service.clone()))
+            .merge(create_department_read_routes(self.department_service.clone()))
+            .merge(create_industry_read_routes(self.industry_service.clone()))
+            .merge(create_level_read_routes(self.level_service.clone()))
+            .merge(create_org_unit_read_routes(self.org_unit_service.clone()))
+            .merge(create_position_read_routes(self.position_service.clone()))
+            .merge(create_structure_read_routes(self.structure_service.clone()))
+    }
+
+    // <<< CUSTOM METHODS
+    // END CUSTOM
 }
 
 /// Builder for OrganizationModule
@@ -182,14 +219,13 @@ impl OrganizationModuleBuilder {
         let industry_repository = Arc::new(IndustryRepository::new(db_pool.clone()));
         let industry_service = Arc::new(IndustryService::with_repository(industry_repository.clone()));
 
-        // <<< CUSTOM
-        let onboarding_service = Arc::new(OnboardingService::new(db_pool.clone()));
-        let org_write_service = Arc::new(OrgWriteService::new(db_pool.clone()));
-        let hierarchy_service = Arc::new(HierarchyService::new(db_pool.clone()));
-        // END CUSTOM
         // Level service
         let level_repository = Arc::new(LevelRepository::new(db_pool.clone()));
         let level_service = Arc::new(LevelService::with_repository(level_repository.clone()));
+
+        // OrgUnit service
+        let org_unit_repository = Arc::new(OrgUnitRepository::new(db_pool.clone()));
+        let org_unit_service = Arc::new(OrgUnitService::with_repository(org_unit_repository.clone()));
 
         // Position service
         let position_repository = Arc::new(PositionRepository::new(db_pool.clone()));
@@ -200,6 +236,9 @@ impl OrganizationModuleBuilder {
         let structure_service = Arc::new(StructureService::with_repository(structure_repository.clone()));
 
         // <<< CUSTOM
+        let onboarding_service = Arc::new(OnboardingService::new(db_pool.clone()));
+        let org_write_service = Arc::new(OrgWriteService::new(db_pool.clone()));
+        let hierarchy_service = Arc::new(HierarchyService::new(db_pool.clone()));
         // END CUSTOM
 
         Ok(OrganizationModule {
@@ -208,15 +247,14 @@ impl OrganizationModuleBuilder {
             company_industry_service,
             department_service,
             industry_service,
+            level_service,
+            org_unit_service,
+            position_service,
+            structure_service,
             // <<< CUSTOM
             onboarding_service,
             org_write_service,
             hierarchy_service,
-            // END CUSTOM
-            level_service,
-            position_service,
-            structure_service,
-            // <<< CUSTOM
             // END CUSTOM
         })
     }

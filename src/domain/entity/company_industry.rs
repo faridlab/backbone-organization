@@ -59,7 +59,7 @@ pub struct CompanyIndustry {
 impl CompanyIndustry {
     /// Create a builder for CompanyIndustry
     pub fn builder() -> CompanyIndustryBuilder {
-        CompanyIndustryBuilder::default()
+        <CompanyIndustryBuilder as Default>::default()
     }
 
     /// Create a new CompanyIndustry with required fields

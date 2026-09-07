@@ -10,11 +10,21 @@ mod company_industry_repository;
 mod department_repository;
 mod industry_repository;
 mod level_repository;
+mod org_unit_repository;
 mod position_repository;
 mod structure_repository;
 
 // Custom persistence modules
 // <<< CUSTOM
+// The hand-written validated-write SQL's parameter types (see the three repositories, all declared
+// `user_owned` in metaphor.codegen.yaml).
+pub use branch_repository::{NewBranchRow, NewHeadOfficeBranchRow};
+pub use company_repository::NewCompanyRow;
+pub use department_repository::NewDepartmentRow;
+// Hierarchy-read row shapes (company/branch/department).
+pub use branch_repository::BranchHierarchyRow;
+pub use company_repository::CompanyHierarchyRow;
+pub use department_repository::DepartmentHierarchyRow;
 // END CUSTOM
 
 // Re-exports
@@ -24,6 +34,7 @@ pub use company_industry_repository::CompanyIndustryRepository;
 pub use department_repository::DepartmentRepository;
 pub use industry_repository::IndustryRepository;
 pub use level_repository::LevelRepository;
+pub use org_unit_repository::OrgUnitRepository;
 pub use position_repository::PositionRepository;
 pub use structure_repository::StructureRepository;
 
@@ -36,13 +47,4 @@ pub use backbone_orm::repository::{
 
 // Re-export custom persistence types
 // <<< CUSTOM
-// The hand-written validated-write SQL's parameter types (see the three repositories, all declared
-// `user_owned` in metaphor.codegen.yaml).
-pub use branch_repository::{NewBranchRow, NewHeadOfficeBranchRow};
-pub use company_repository::NewCompanyRow;
-pub use department_repository::NewDepartmentRow;
-// Hierarchy-read row shapes (company/branch/department).
-pub use branch_repository::BranchHierarchyRow;
-pub use company_repository::CompanyHierarchyRow;
-pub use department_repository::DepartmentHierarchyRow;
 // END CUSTOM

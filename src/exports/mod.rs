@@ -8,7 +8,7 @@
 //! ## Usage from other modules
 //!
 //! ```text
-//! use organization::exports::{BranchDto, OrganizationQueryService};
+//! use organization::exports::{BranchDto};
 //! ```
 
 mod types;
@@ -45,15 +45,15 @@ pub use events::*;
 /// - `LevelDto` - Data transfer object for Level
 /// - `LevelSummary` - Summary view of Level
 /// - `LevelId` - Type-safe ID wrapper
+/// - `OrgUnitDto` - Data transfer object for OrgUnit
+/// - `OrgUnitSummary` - Summary view of OrgUnit
+/// - `OrgUnitId` - Type-safe ID wrapper
 /// - `PositionDto` - Data transfer object for Position
 /// - `PositionSummary` - Summary view of Position
 /// - `PositionId` - Type-safe ID wrapper
 /// - `StructureDto` - Data transfer object for Structure
 /// - `StructureSummary` - Summary view of Structure
 /// - `StructureId` - Type-safe ID wrapper
-///
-/// ## Public Services
-/// - `OrganizationQueryService` - Read-only queries
 ///
 /// ## Public Events
 /// - `BranchCreatedEvent` - Published when Branch is created
@@ -74,6 +74,9 @@ pub use events::*;
 /// - `LevelCreatedEvent` - Published when Level is created
 /// - `LevelUpdatedEvent` - Published when Level is updated
 /// - `LevelDeletedEvent` - Published when Level is deleted
+/// - `OrgUnitCreatedEvent` - Published when OrgUnit is created
+/// - `OrgUnitUpdatedEvent` - Published when OrgUnit is updated
+/// - `OrgUnitDeletedEvent` - Published when OrgUnit is deleted
 /// - `PositionCreatedEvent` - Published when Position is created
 /// - `PositionUpdatedEvent` - Published when Position is updated
 /// - `PositionDeletedEvent` - Published when Position is deleted

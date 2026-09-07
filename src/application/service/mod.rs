@@ -12,16 +12,15 @@ pub mod company_service;
 pub mod company_industry_service;
 pub mod department_service;
 pub mod industry_service;
-// <<< CUSTOM
-pub mod onboarding_service;
-pub mod org_write_service;
-pub mod hierarchy_service;
-// END CUSTOM
 pub mod level_service;
+pub mod org_unit_service;
 pub mod position_service;
 pub mod structure_service;
 
 // <<< CUSTOM
+pub mod onboarding_service;
+pub mod org_write_service;
+pub mod hierarchy_service;
 // END CUSTOM
 
 pub use branch_service::BranchService;
@@ -40,6 +39,7 @@ pub use hierarchy_service::{
 };
 // END CUSTOM
 pub use level_service::LevelService;
+pub use org_unit_service::OrgUnitService;
 pub use position_service::PositionService;
 pub use structure_service::StructureService;
 // <<< CUSTOM

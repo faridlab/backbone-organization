@@ -8,6 +8,7 @@ pub mod company_industry_domain_policy;
 pub mod department_domain_policy;
 pub mod industry_domain_policy;
 pub mod level_domain_policy;
+pub mod org_unit_domain_policy;
 pub mod position_domain_policy;
 pub mod structure_domain_policy;
 
@@ -17,6 +18,7 @@ pub use company_industry_domain_policy::CompanyIndustryDomainPolicy;
 pub use department_domain_policy::DepartmentDomainPolicy;
 pub use industry_domain_policy::IndustryDomainPolicy;
 pub use level_domain_policy::LevelDomainPolicy;
+pub use org_unit_domain_policy::OrgUnitDomainPolicy;
 pub use position_domain_policy::PositionDomainPolicy;
 pub use structure_domain_policy::StructureDomainPolicy;
 

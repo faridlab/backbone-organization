@@ -345,4 +345,3 @@ impl backbone_core::ApplyUpdateDto<UpdateDepartmentDto> for Department {
 // Add custom DTOs specific to Department here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
-

@@ -130,6 +130,13 @@ pub fn create_department_read_routes(service: Arc<DepartmentService>) -> Router 
 ///
 /// These routes must NOT be publicly exposed. Wrap them with an auth
 /// middleware before nesting into the application router.
+///
+/// # This is unguarded generic CRUD, not a validated write path
+///
+/// These are plain create/update/patch/delete mutations over the entity row —
+/// they bypass all business invariants. If the module exposes a validated write
+/// service (e.g. a command router over its domain engine), serve THAT instead
+/// for any mutation that must respect domain rules.
 pub fn create_department_write_routes(service: Arc<DepartmentService>) -> Router {
     BackboneCrudHandler::<DepartmentService, Department, CreateDepartmentDto, UpdateDepartmentDto, DepartmentResponseDto>::write_routes(
         service,
@@ -178,4 +185,3 @@ pub fn create_protected_department_routes<A: AuthMiddleware + Send + Sync + 'sta
             }
         }))
 }
-

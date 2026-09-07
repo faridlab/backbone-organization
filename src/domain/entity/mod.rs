@@ -8,6 +8,7 @@ pub mod company_industry;
 pub mod department;
 pub mod industry;
 pub mod level;
+pub mod org_unit;
 pub mod position;
 pub mod structure;
 pub mod branch_type;
@@ -15,6 +16,7 @@ pub mod org_status;
 pub mod company_entity_type;
 pub mod company_status;
 pub mod kbli_sector;
+pub mod org_unit_kind;
 
 // Re-exports
 pub use branch::Branch;
@@ -35,6 +37,9 @@ pub use industry::IndustryId;
 pub use level::Level;
 pub use level::LevelBuilder;
 pub use level::LevelId;
+pub use org_unit::OrgUnit;
+pub use org_unit::OrgUnitBuilder;
+pub use org_unit::OrgUnitId;
 pub use position::Position;
 pub use position::PositionBuilder;
 pub use position::PositionId;
@@ -46,6 +51,7 @@ pub use org_status::OrgStatus;
 pub use company_entity_type::CompanyEntityType;
 pub use company_status::CompanyStatus;
 pub use kbli_sector::KBLISector;
+pub use org_unit_kind::OrgUnitKind;
 
 // ==========================================================================
 // Entity Trait
