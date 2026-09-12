@@ -48,7 +48,6 @@ impl From<BranchId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BranchDto {
     pub id: BranchId,
-    pub company_id: Uuid,
     pub code: String,
     pub name: String,
     pub branch_type: BranchType,
@@ -133,7 +132,6 @@ pub struct CompanyDto {
     pub province: Option<String>,
     pub postal_code: Option<String>,
     pub country: String,
-    pub parent_company_id: Option<Uuid>,
     pub is_default: bool,
     pub status: CompanyStatus,
     pub notes: Option<String>,
@@ -194,7 +192,6 @@ impl From<CompanyIndustryId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompanyIndustryDto {
     pub id: CompanyIndustryId,
-    pub company_id: Uuid,
     pub industry_id: Uuid,
     pub is_primary: bool,
     pub metadata: serde_json::Value,
@@ -250,7 +247,6 @@ impl From<DepartmentId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DepartmentDto {
     pub id: DepartmentId,
-    pub company_id: Uuid,
     pub code: String,
     pub name: String,
     pub parent_id: Option<Uuid>,
@@ -375,7 +371,6 @@ impl From<LevelId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LevelDto {
     pub id: LevelId,
-    pub company_id: Uuid,
     pub name: String,
     pub grade: Option<String>,
     pub order_number: Option<i32>,
@@ -491,7 +486,6 @@ impl From<PositionId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PositionDto {
     pub id: PositionId,
-    pub company_id: Uuid,
     pub name: String,
     pub code: Option<String>,
     pub description: Option<String>,
@@ -549,7 +543,6 @@ impl From<StructureId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StructureDto {
     pub id: StructureId,
-    pub company_id: Uuid,
     pub name: String,
     pub parent_id: Option<Uuid>,
     pub manager_id: Option<Uuid>,

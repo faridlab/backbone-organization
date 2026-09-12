@@ -44,7 +44,6 @@ pub struct StructurePaginatedResult {
 /// Filter parameters for list queries
 #[derive(Debug, Clone, Default)]
 pub struct StructureFilter {
-    pub company_id: Option<Uuid>,
     pub name: Option<String>,
     pub parent_id: Option<Uuid>,
     pub manager_id: Option<Uuid>,
@@ -53,7 +52,7 @@ pub struct StructureFilter {
 impl StructureFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.company_id.is_some() || self.name.is_some() || self.parent_id.is_some() || self.manager_id.is_some()
+        self.name.is_some() || self.parent_id.is_some() || self.manager_id.is_some()
     }
 }
 

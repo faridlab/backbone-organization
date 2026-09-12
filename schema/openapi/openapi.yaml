@@ -3331,7 +3331,6 @@ components:
       type: object
       required:
         - id
-        - company_id
         - code
         - name
         - branch_type
@@ -3341,9 +3340,6 @@ components:
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         code:
@@ -3407,7 +3403,6 @@ components:
     CreateBranchRequest:
       type: object
       required:
-        - company_id
         - code
         - name
         - branch_type
@@ -3416,9 +3411,6 @@ components:
         - status
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         code:
           type: string
           maxLength: 30
@@ -3467,7 +3459,6 @@ components:
     UpdateBranchRequest:
       type: object
       required:
-        - company_id
         - code
         - name
         - branch_type
@@ -3476,9 +3467,6 @@ components:
         - status
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         code:
           type: string
           maxLength: 30
@@ -3527,9 +3515,6 @@ components:
     PatchBranchRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         code:
           type: string
           maxLength: 30
@@ -3655,10 +3640,6 @@ components:
           maxLength: 10
         country:
           type: string
-        parent_company_id:
-          nullable: true
-          type: string
-          format: uuid
         is_default:
           type: boolean
         status:
@@ -3749,10 +3730,6 @@ components:
           maxLength: 10
         country:
           type: string
-        parent_company_id:
-          nullable: true
-          type: string
-          format: uuid
         is_default:
           type: boolean
         status:
@@ -3830,10 +3807,6 @@ components:
           maxLength: 10
         country:
           type: string
-        parent_company_id:
-          nullable: true
-          type: string
-          format: uuid
         is_default:
           type: boolean
         status:
@@ -3901,10 +3874,6 @@ components:
           maxLength: 10
         country:
           type: string
-        parent_company_id:
-          nullable: true
-          type: string
-          format: uuid
         is_default:
           type: boolean
         status:
@@ -3930,15 +3899,11 @@ components:
       type: object
       required:
         - id
-        - company_id
         - industry_id
         - is_primary
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         industry_id:
@@ -3965,14 +3930,10 @@ components:
     CreateCompanyIndustryRequest:
       type: object
       required:
-        - company_id
         - industry_id
         - is_primary
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         industry_id:
           type: string
           format: uuid
@@ -3984,14 +3945,10 @@ components:
     UpdateCompanyIndustryRequest:
       type: object
       required:
-        - company_id
         - industry_id
         - is_primary
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         industry_id:
           type: string
           format: uuid
@@ -4003,9 +3960,6 @@ components:
     PatchCompanyIndustryRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         industry_id:
           type: string
           format: uuid
@@ -4028,7 +3982,6 @@ components:
       type: object
       required:
         - id
-        - company_id
         - code
         - name
         - level
@@ -4038,9 +3991,6 @@ components:
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         code:
@@ -4090,7 +4040,6 @@ components:
     CreateDepartmentRequest:
       type: object
       required:
-        - company_id
         - code
         - name
         - level
@@ -4099,9 +4048,6 @@ components:
         - status
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         code:
           type: string
           maxLength: 30
@@ -4136,7 +4082,6 @@ components:
     UpdateDepartmentRequest:
       type: object
       required:
-        - company_id
         - code
         - name
         - level
@@ -4145,9 +4090,6 @@ components:
         - status
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         code:
           type: string
           maxLength: 30
@@ -4182,9 +4124,6 @@ components:
     PatchDepartmentRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         code:
           type: string
           maxLength: 30
@@ -4355,14 +4294,10 @@ components:
       type: object
       required:
         - id
-        - company_id
         - name
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         name:
@@ -4395,13 +4330,9 @@ components:
     CreateLevelRequest:
       type: object
       required:
-        - company_id
         - name
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
           maxLength: 150
@@ -4419,13 +4350,9 @@ components:
     UpdateLevelRequest:
       type: object
       required:
-        - company_id
         - name
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
           maxLength: 150
@@ -4443,9 +4370,6 @@ components:
     PatchLevelRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
           maxLength: 150
@@ -4589,14 +4513,10 @@ components:
       type: object
       required:
         - id
-        - company_id
         - name
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         name:
@@ -4629,13 +4549,9 @@ components:
     CreatePositionRequest:
       type: object
       required:
-        - company_id
         - name
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
           maxLength: 150
@@ -4653,13 +4569,9 @@ components:
     UpdatePositionRequest:
       type: object
       required:
-        - company_id
         - name
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
           maxLength: 150
@@ -4677,9 +4589,6 @@ components:
     PatchPositionRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
           maxLength: 150
@@ -4708,14 +4617,10 @@ components:
       type: object
       required:
         - id
-        - company_id
         - name
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         name:
@@ -4748,13 +4653,9 @@ components:
     CreateStructureRequest:
       type: object
       required:
-        - company_id
         - name
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
           maxLength: 150
@@ -4772,13 +4673,9 @@ components:
     UpdateStructureRequest:
       type: object
       required:
-        - company_id
         - name
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
           maxLength: 150
@@ -4796,9 +4693,6 @@ components:
     PatchStructureRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
           maxLength: 150

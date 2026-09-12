@@ -32,9 +32,6 @@ use crate::domain::entity::AuditMetadata;
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CreateStructureDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
@@ -57,9 +54,6 @@ pub struct CreateStructureDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateStructureDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
@@ -82,9 +76,6 @@ pub struct UpdateStructureDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct PatchStructureDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -98,7 +89,7 @@ pub struct PatchStructureDto {
 impl PatchStructureDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.name.is_some() || self.parent_id.is_some() || self.manager_id.is_some()
+        self.name.is_some() || self.parent_id.is_some() || self.manager_id.is_some()
     }
 }
 
@@ -116,8 +107,6 @@ impl PatchStructureDto {
 pub struct StructureResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     pub parent_id: Option<Uuid>,
@@ -179,9 +168,9 @@ impl StructureListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct StructureSummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub name: String,
     pub parent_id: Option<Uuid>,
+    pub manager_id: Option<Uuid>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -193,7 +182,6 @@ impl From<Structure> for StructureResponseDto {
     fn from(entity: Structure) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             parent_id: entity.parent_id,
             manager_id: entity.manager_id,
@@ -207,9 +195,9 @@ impl From<Structure> for StructureSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             parent_id: entity.parent_id,
+            manager_id: entity.manager_id,
             created_at,
         }
     }
@@ -219,7 +207,6 @@ impl From<CreateStructureDto> for Structure {
     fn from(dto: CreateStructureDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             name: dto.name,
             parent_id: dto.parent_id,
             manager_id: dto.manager_id,
@@ -232,7 +219,6 @@ impl From<&Structure> for StructureResponseDto {
     fn from(entity: &Structure) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             name: entity.name.clone(),
             parent_id: entity.parent_id.clone(),
             manager_id: entity.manager_id.clone(),
@@ -249,7 +235,6 @@ impl backbone_core::FromCreateDto<CreateStructureDto> for Structure {
 
 impl backbone_core::ApplyUpdateDto<UpdateStructureDto> for Structure {
     fn apply_update(mut self, dto: UpdateStructureDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.name = dto.name;
         self.parent_id = dto.parent_id;
         self.manager_id = dto.manager_id;

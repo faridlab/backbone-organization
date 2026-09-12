@@ -50,7 +50,6 @@ impl std::ops::Deref for DepartmentId {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Department {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub code: String,
     pub name: String,
     pub parent_id: Option<Uuid>,
@@ -72,10 +71,9 @@ impl Department {
     }
 
     /// Create a new Department with required fields
-    pub fn new(company_id: Uuid, code: String, name: String, level: i32, is_group: bool, sort_order: i32, status: OrgStatus) -> Self {
+    pub fn new(code: String, name: String, level: i32, is_group: bool, sort_order: i32, status: OrgStatus) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id,
             code,
             name,
             parent_id: None,
@@ -175,9 +173,6 @@ impl Department {
     pub fn apply_patch(&mut self, fields: std::collections::HashMap<String, serde_json::Value>) {
         for (key, value) in fields {
             match key.as_str() {
-                "company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
-                }
                 "code" => {
                     if let Ok(v) = serde_json::from_value(value) { self.code = v; }
                 }
@@ -259,7 +254,6 @@ impl backbone_orm::EntityRepoMeta for Department {
     fn column_types() -> std::collections::HashMap<String, String> {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
-        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("parent_id".to_string(), "uuid".to_string());
         m.insert("branch_id".to_string(), "uuid".to_string());
         m.insert("manager_id".to_string(), "uuid".to_string());
@@ -269,11 +263,8 @@ impl backbone_orm::EntityRepoMeta for Department {
     fn search_fields() -> &'static [&'static str] {
         &["code", "name"]
     }
-    fn company_field() -> Option<&'static str> {
-        Some("company_id")
-    }
     fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
-        &[("company", "companies", "companyId"), ("parent", "departments", "parentId"), ("branch", "branches", "branchId")]
+        &[("parent", "departments", "parentId"), ("branch", "branches", "branchId")]
     }
 }
 
@@ -283,7 +274,6 @@ impl backbone_orm::EntityRepoMeta for Department {
 /// System fields (id, metadata, timestamps) are auto-initialized.
 #[derive(Debug, Clone, Default)]
 pub struct DepartmentBuilder {
-    company_id: Option<Uuid>,
     code: Option<String>,
     name: Option<String>,
     parent_id: Option<Uuid>,
@@ -296,12 +286,6 @@ pub struct DepartmentBuilder {
 }
 
 impl DepartmentBuilder {
-    /// Set the company_id field (required)
-    pub fn company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Set the code field (required)
     pub fn code(mut self, value: String) -> Self {
         self.code = Some(value);
@@ -360,13 +344,11 @@ impl DepartmentBuilder {
     ///
     /// Returns Err if any required field without a default is missing.
     pub fn build(self) -> Result<Department, String> {
-        let company_id = self.company_id.ok_or_else(|| "company_id is required".to_string())?;
         let code = self.code.ok_or_else(|| "code is required".to_string())?;
         let name = self.name.ok_or_else(|| "name is required".to_string())?;
 
         Ok(Department {
             id: Uuid::new_v4(),
-            company_id,
             code,
             name,
             parent_id: self.parent_id,

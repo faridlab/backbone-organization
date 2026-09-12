@@ -32,9 +32,6 @@ use crate::domain::entity::AuditMetadata;
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CreateLevelDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
@@ -58,9 +55,6 @@ pub struct CreateLevelDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateLevelDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
@@ -84,9 +78,6 @@ pub struct UpdateLevelDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct PatchLevelDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -101,7 +92,7 @@ pub struct PatchLevelDto {
 impl PatchLevelDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.name.is_some() || self.grade.is_some() || self.order_number.is_some()
+        self.name.is_some() || self.grade.is_some() || self.order_number.is_some()
     }
 }
 
@@ -119,8 +110,6 @@ impl PatchLevelDto {
 pub struct LevelResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     pub grade: Option<String>,
@@ -182,9 +171,9 @@ impl LevelListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct LevelSummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub name: String,
     pub grade: Option<String>,
+    pub order_number: Option<i32>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -196,7 +185,6 @@ impl From<Level> for LevelResponseDto {
     fn from(entity: Level) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             grade: entity.grade,
             order_number: entity.order_number,
@@ -210,9 +198,9 @@ impl From<Level> for LevelSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             grade: entity.grade,
+            order_number: entity.order_number,
             created_at,
         }
     }
@@ -222,7 +210,6 @@ impl From<CreateLevelDto> for Level {
     fn from(dto: CreateLevelDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             name: dto.name,
             grade: dto.grade,
             order_number: dto.order_number,
@@ -235,7 +222,6 @@ impl From<&Level> for LevelResponseDto {
     fn from(entity: &Level) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             name: entity.name.clone(),
             grade: entity.grade.clone(),
             order_number: entity.order_number.clone(),
@@ -252,7 +238,6 @@ impl backbone_core::FromCreateDto<CreateLevelDto> for Level {
 
 impl backbone_core::ApplyUpdateDto<UpdateLevelDto> for Level {
     fn apply_update(mut self, dto: UpdateLevelDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.name = dto.name;
         self.grade = dto.grade;
         self.order_number = dto.order_number;

@@ -32,9 +32,6 @@ use crate::domain::entity::AuditMetadata;
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CreatePositionDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
@@ -59,9 +56,6 @@ pub struct CreatePositionDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdatePositionDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
@@ -86,9 +80,6 @@ pub struct UpdatePositionDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct PatchPositionDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -104,7 +95,7 @@ pub struct PatchPositionDto {
 impl PatchPositionDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.name.is_some() || self.code.is_some() || self.description.is_some()
+        self.name.is_some() || self.code.is_some() || self.description.is_some()
     }
 }
 
@@ -122,8 +113,6 @@ impl PatchPositionDto {
 pub struct PositionResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     pub code: Option<String>,
@@ -185,9 +174,9 @@ impl PositionListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct PositionSummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub name: String,
     pub code: Option<String>,
+    pub description: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -199,7 +188,6 @@ impl From<Position> for PositionResponseDto {
     fn from(entity: Position) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             code: entity.code,
             description: entity.description,
@@ -213,9 +201,9 @@ impl From<Position> for PositionSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             code: entity.code,
+            description: entity.description,
             created_at,
         }
     }
@@ -225,7 +213,6 @@ impl From<CreatePositionDto> for Position {
     fn from(dto: CreatePositionDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             name: dto.name,
             code: dto.code,
             description: dto.description,
@@ -238,7 +225,6 @@ impl From<&Position> for PositionResponseDto {
     fn from(entity: &Position) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             name: entity.name.clone(),
             code: entity.code.clone(),
             description: entity.description.clone(),
@@ -255,7 +241,6 @@ impl backbone_core::FromCreateDto<CreatePositionDto> for Position {
 
 impl backbone_core::ApplyUpdateDto<UpdatePositionDto> for Position {
     fn apply_update(mut self, dto: UpdatePositionDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.name = dto.name;
         self.code = dto.code;
         self.description = dto.description;

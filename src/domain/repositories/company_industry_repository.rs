@@ -44,7 +44,6 @@ pub struct CompanyIndustryPaginatedResult {
 /// Filter parameters for list queries
 #[derive(Debug, Clone, Default)]
 pub struct CompanyIndustryFilter {
-    pub company_id: Option<Uuid>,
     pub industry_id: Option<Uuid>,
     pub is_primary: Option<bool>,
 }
@@ -52,7 +51,7 @@ pub struct CompanyIndustryFilter {
 impl CompanyIndustryFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.company_id.is_some() || self.industry_id.is_some() || self.is_primary.is_some()
+        self.industry_id.is_some() || self.is_primary.is_some()
     }
 }
 

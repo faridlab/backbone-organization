@@ -48,7 +48,6 @@ impl std::ops::Deref for StructureId {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Structure {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub name: String,
     pub parent_id: Option<Uuid>,
     pub manager_id: Option<Uuid>,
@@ -64,10 +63,9 @@ impl Structure {
     }
 
     /// Create a new Structure with required fields
-    pub fn new(company_id: Uuid, name: String) -> Self {
+    pub fn new(name: String) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id,
             name,
             parent_id: None,
             manager_id: None,
@@ -150,9 +148,6 @@ impl Structure {
     pub fn apply_patch(&mut self, fields: std::collections::HashMap<String, serde_json::Value>) {
         for (key, value) in fields {
             match key.as_str() {
-                "company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
-                }
                 "name" => {
                     if let Ok(v) = serde_json::from_value(value) { self.name = v; }
                 }
@@ -216,7 +211,6 @@ impl backbone_orm::EntityRepoMeta for Structure {
     fn column_types() -> std::collections::HashMap<String, String> {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
-        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("parent_id".to_string(), "uuid".to_string());
         m.insert("manager_id".to_string(), "uuid".to_string());
         m
@@ -224,11 +218,8 @@ impl backbone_orm::EntityRepoMeta for Structure {
     fn search_fields() -> &'static [&'static str] {
         &["name"]
     }
-    fn company_field() -> Option<&'static str> {
-        Some("company_id")
-    }
     fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
-        &[("company", "companies", "companyId"), ("parent", "structures", "parentId")]
+        &[("parent", "structures", "parentId")]
     }
 }
 
@@ -238,19 +229,12 @@ impl backbone_orm::EntityRepoMeta for Structure {
 /// System fields (id, metadata, timestamps) are auto-initialized.
 #[derive(Debug, Clone, Default)]
 pub struct StructureBuilder {
-    company_id: Option<Uuid>,
     name: Option<String>,
     parent_id: Option<Uuid>,
     manager_id: Option<Uuid>,
 }
 
 impl StructureBuilder {
-    /// Set the company_id field (required)
-    pub fn company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Set the name field (required)
     pub fn name(mut self, value: String) -> Self {
         self.name = Some(value);
@@ -273,12 +257,10 @@ impl StructureBuilder {
     ///
     /// Returns Err if any required field without a default is missing.
     pub fn build(self) -> Result<Structure, String> {
-        let company_id = self.company_id.ok_or_else(|| "company_id is required".to_string())?;
         let name = self.name.ok_or_else(|| "name is required".to_string())?;
 
         Ok(Structure {
             id: Uuid::new_v4(),
-            company_id,
             name,
             parent_id: self.parent_id,
             manager_id: self.manager_id,

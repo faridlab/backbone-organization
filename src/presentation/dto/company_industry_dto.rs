@@ -33,9 +33,6 @@ use crate::domain::entity::AuditMetadata;
 #[serde(rename_all = "camelCase")]
 pub struct CreateCompanyIndustryDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "industry_id")]
     pub industry_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = true))]
@@ -56,9 +53,6 @@ pub struct CreateCompanyIndustryDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateCompanyIndustryDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "industry_id")]
     pub industry_id: Uuid,
@@ -81,9 +75,6 @@ pub struct UpdateCompanyIndustryDto {
 #[serde(rename_all = "camelCase")]
 pub struct PatchCompanyIndustryDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "industry_id")]
     pub industry_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
@@ -94,7 +85,7 @@ pub struct PatchCompanyIndustryDto {
 impl PatchCompanyIndustryDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.industry_id.is_some() || self.is_primary.is_some()
+        self.industry_id.is_some() || self.is_primary.is_some()
     }
 }
 
@@ -112,8 +103,6 @@ impl PatchCompanyIndustryDto {
 pub struct CompanyIndustryResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub industry_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = true))]
@@ -175,7 +164,6 @@ impl CompanyIndustryListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct CompanyIndustrySummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub industry_id: Uuid,
     pub is_primary: bool,
     pub created_at: Option<DateTime<Utc>>,
@@ -189,7 +177,6 @@ impl From<CompanyIndustry> for CompanyIndustryResponseDto {
     fn from(entity: CompanyIndustry) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             industry_id: entity.industry_id,
             is_primary: entity.is_primary,
             metadata: entity.metadata,
@@ -202,7 +189,6 @@ impl From<CompanyIndustry> for CompanyIndustrySummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             industry_id: entity.industry_id,
             is_primary: entity.is_primary,
             created_at,
@@ -214,7 +200,6 @@ impl From<CreateCompanyIndustryDto> for CompanyIndustry {
     fn from(dto: CreateCompanyIndustryDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             industry_id: dto.industry_id,
             is_primary: dto.is_primary,
             metadata: AuditMetadata::default(),
@@ -226,7 +211,6 @@ impl From<&CompanyIndustry> for CompanyIndustryResponseDto {
     fn from(entity: &CompanyIndustry) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             industry_id: entity.industry_id.clone(),
             is_primary: entity.is_primary.clone(),
             metadata: entity.metadata.clone(),
@@ -242,7 +226,6 @@ impl backbone_core::FromCreateDto<CreateCompanyIndustryDto> for CompanyIndustry 
 
 impl backbone_core::ApplyUpdateDto<UpdateCompanyIndustryDto> for CompanyIndustry {
     fn apply_update(mut self, dto: UpdateCompanyIndustryDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.industry_id = dto.industry_id;
         self.is_primary = dto.is_primary;
         Ok(self)

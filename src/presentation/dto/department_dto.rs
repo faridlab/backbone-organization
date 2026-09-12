@@ -33,9 +33,6 @@ use crate::domain::entity::OrgStatus;
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CreateDepartmentDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub code: String,
@@ -72,9 +69,6 @@ pub struct CreateDepartmentDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDepartmentDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub code: String,
@@ -111,9 +105,6 @@ pub struct UpdateDepartmentDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct PatchDepartmentDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -144,7 +135,7 @@ pub struct PatchDepartmentDto {
 impl PatchDepartmentDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.code.is_some() || self.name.is_some() || self.parent_id.is_some() || self.level.is_some() || self.is_group.is_some() || self.branch_id.is_some() || self.manager_id.is_some() || self.sort_order.is_some() || self.status.is_some()
+        self.code.is_some() || self.name.is_some() || self.parent_id.is_some() || self.level.is_some() || self.is_group.is_some() || self.branch_id.is_some() || self.manager_id.is_some() || self.sort_order.is_some() || self.status.is_some()
     }
 }
 
@@ -162,8 +153,6 @@ impl PatchDepartmentDto {
 pub struct DepartmentResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub code: String,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
@@ -235,9 +224,9 @@ impl DepartmentListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct DepartmentSummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub code: String,
     pub name: String,
+    pub parent_id: Option<Uuid>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -249,7 +238,6 @@ impl From<Department> for DepartmentResponseDto {
     fn from(entity: Department) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             code: entity.code,
             name: entity.name,
             parent_id: entity.parent_id,
@@ -269,9 +257,9 @@ impl From<Department> for DepartmentSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             code: entity.code,
             name: entity.name,
+            parent_id: entity.parent_id,
             created_at,
         }
     }
@@ -281,7 +269,6 @@ impl From<CreateDepartmentDto> for Department {
     fn from(dto: CreateDepartmentDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             code: dto.code,
             name: dto.name,
             parent_id: dto.parent_id,
@@ -300,7 +287,6 @@ impl From<&Department> for DepartmentResponseDto {
     fn from(entity: &Department) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             code: entity.code.clone(),
             name: entity.name.clone(),
             parent_id: entity.parent_id.clone(),
@@ -323,7 +309,6 @@ impl backbone_core::FromCreateDto<CreateDepartmentDto> for Department {
 
 impl backbone_core::ApplyUpdateDto<UpdateDepartmentDto> for Department {
     fn apply_update(mut self, dto: UpdateDepartmentDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.code = dto.code;
         self.name = dto.name;
         self.parent_id = dto.parent_id;

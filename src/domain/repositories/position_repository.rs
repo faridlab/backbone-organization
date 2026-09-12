@@ -7,7 +7,6 @@
 
 use async_trait::async_trait;
 use anyhow::Result;
-use uuid::Uuid;
 
 use crate::domain::entity::Position;
 
@@ -44,7 +43,6 @@ pub struct PositionPaginatedResult {
 /// Filter parameters for list queries
 #[derive(Debug, Clone, Default)]
 pub struct PositionFilter {
-    pub company_id: Option<Uuid>,
     pub name: Option<String>,
     pub code: Option<String>,
     pub description: Option<String>,
@@ -53,7 +51,7 @@ pub struct PositionFilter {
 impl PositionFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.company_id.is_some() || self.name.is_some() || self.code.is_some() || self.description.is_some()
+        self.name.is_some() || self.code.is_some() || self.description.is_some()
     }
 }
 

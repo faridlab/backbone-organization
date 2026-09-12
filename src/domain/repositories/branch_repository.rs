@@ -7,7 +7,6 @@
 
 use async_trait::async_trait;
 use anyhow::Result;
-use uuid::Uuid;
 
 use crate::domain::entity::{Branch, BranchType, OrgStatus};
 
@@ -44,7 +43,6 @@ pub struct BranchPaginatedResult {
 /// Filter parameters for list queries
 #[derive(Debug, Clone, Default)]
 pub struct BranchFilter {
-    pub company_id: Option<Uuid>,
     pub code: Option<String>,
     pub name: Option<String>,
     pub branch_type: Option<BranchType>,
@@ -63,7 +61,7 @@ pub struct BranchFilter {
 impl BranchFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.company_id.is_some() || self.code.is_some() || self.name.is_some() || self.branch_type.is_some() || self.is_head_office.is_some() || self.npwp.is_some() || self.email.is_some() || self.phone.is_some() || self.address.is_some() || self.city.is_some() || self.province.is_some() || self.postal_code.is_some() || self.country.is_some() || self.status.is_some()
+        self.code.is_some() || self.name.is_some() || self.branch_type.is_some() || self.is_head_office.is_some() || self.npwp.is_some() || self.email.is_some() || self.phone.is_some() || self.address.is_some() || self.city.is_some() || self.province.is_some() || self.postal_code.is_some() || self.country.is_some() || self.status.is_some()
     }
 }
 

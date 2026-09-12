@@ -66,7 +66,6 @@ pub struct Company {
     pub province: Option<String>,
     pub postal_code: Option<String>,
     pub country: String,
-    pub parent_company_id: Option<Uuid>,
     pub is_default: bool,
     pub status: CompanyStatus,
     pub notes: Option<String>,
@@ -100,7 +99,6 @@ impl Company {
             province: None,
             postal_code: None,
             country,
-            parent_company_id: None,
             is_default,
             status,
             notes: None,
@@ -222,12 +220,6 @@ impl Company {
         self
     }
 
-    /// Set the parent_company_id field (chainable)
-    pub fn with_parent_company_id(mut self, value: Uuid) -> Self {
-        self.parent_company_id = Some(value);
-        self
-    }
-
     /// Set the notes field (chainable)
     pub fn with_notes(mut self, value: String) -> Self {
         self.notes = Some(value);
@@ -286,9 +278,6 @@ impl Company {
                 }
                 "country" => {
                     if let Ok(v) = serde_json::from_value(value) { self.country = v; }
-                }
-                "parent_company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.parent_company_id = v; }
                 }
                 "is_default" => {
                     if let Ok(v) = serde_json::from_value(value) { self.is_default = v; }
@@ -353,16 +342,12 @@ impl backbone_orm::EntityRepoMeta for Company {
     fn column_types() -> std::collections::HashMap<String, String> {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
-        m.insert("parent_company_id".to_string(), "uuid".to_string());
         m.insert("entity_type".to_string(), "company_entity_type".to_string());
         m.insert("status".to_string(), "company_status".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
         &["code", "legal_name", "base_currency", "country"]
-    }
-    fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
-        &[("parent", "companies", "parentCompanyId")]
     }
 }
 
@@ -387,7 +372,6 @@ pub struct CompanyBuilder {
     province: Option<String>,
     postal_code: Option<String>,
     country: Option<String>,
-    parent_company_id: Option<Uuid>,
     is_default: Option<bool>,
     status: Option<CompanyStatus>,
     notes: Option<String>,
@@ -484,12 +468,6 @@ impl CompanyBuilder {
         self
     }
 
-    /// Set the parent_company_id field (optional)
-    pub fn parent_company_id(mut self, value: Uuid) -> Self {
-        self.parent_company_id = Some(value);
-        self
-    }
-
     /// Set the is_default field (default: `false`)
     pub fn is_default(mut self, value: bool) -> Self {
         self.is_default = Some(value);
@@ -532,7 +510,6 @@ impl CompanyBuilder {
             province: self.province,
             postal_code: self.postal_code,
             country: self.country.unwrap_or("ID".to_string()),
-            parent_company_id: self.parent_company_id,
             is_default: self.is_default.unwrap_or(false),
             status: self.status.unwrap_or_default(),
             notes: self.notes,

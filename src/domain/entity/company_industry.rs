@@ -48,7 +48,6 @@ impl std::ops::Deref for CompanyIndustryId {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct CompanyIndustry {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub industry_id: Uuid,
     pub is_primary: bool,
     #[serde(default)]
@@ -63,10 +62,9 @@ impl CompanyIndustry {
     }
 
     /// Create a new CompanyIndustry with required fields
-    pub fn new(company_id: Uuid, industry_id: Uuid, is_primary: bool) -> Self {
+    pub fn new(industry_id: Uuid, is_primary: bool) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id,
             industry_id,
             is_primary,
             metadata: AuditMetadata::default(),
@@ -132,9 +130,6 @@ impl CompanyIndustry {
     pub fn apply_patch(&mut self, fields: std::collections::HashMap<String, serde_json::Value>) {
         for (key, value) in fields {
             match key.as_str() {
-                "company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
-                }
                 "industry_id" => {
                     if let Ok(v) = serde_json::from_value(value) { self.industry_id = v; }
                 }
@@ -195,18 +190,14 @@ impl backbone_orm::EntityRepoMeta for CompanyIndustry {
     fn column_types() -> std::collections::HashMap<String, String> {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
-        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("industry_id".to_string(), "uuid".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
         &[]
     }
-    fn company_field() -> Option<&'static str> {
-        Some("company_id")
-    }
     fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
-        &[("company", "companies", "companyId"), ("industry", "industries", "industryId")]
+        &[("industry", "industries", "industryId")]
     }
 }
 
@@ -216,18 +207,11 @@ impl backbone_orm::EntityRepoMeta for CompanyIndustry {
 /// System fields (id, metadata, timestamps) are auto-initialized.
 #[derive(Debug, Clone, Default)]
 pub struct CompanyIndustryBuilder {
-    company_id: Option<Uuid>,
     industry_id: Option<Uuid>,
     is_primary: Option<bool>,
 }
 
 impl CompanyIndustryBuilder {
-    /// Set the company_id field (required)
-    pub fn company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Set the industry_id field (required)
     pub fn industry_id(mut self, value: Uuid) -> Self {
         self.industry_id = Some(value);
@@ -244,12 +228,10 @@ impl CompanyIndustryBuilder {
     ///
     /// Returns Err if any required field without a default is missing.
     pub fn build(self) -> Result<CompanyIndustry, String> {
-        let company_id = self.company_id.ok_or_else(|| "company_id is required".to_string())?;
         let industry_id = self.industry_id.ok_or_else(|| "industry_id is required".to_string())?;
 
         Ok(CompanyIndustry {
             id: Uuid::new_v4(),
-            company_id,
             industry_id,
             is_primary: self.is_primary.unwrap_or(false),
             metadata: AuditMetadata::default(),

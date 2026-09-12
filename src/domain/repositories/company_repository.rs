@@ -7,7 +7,6 @@
 
 use async_trait::async_trait;
 use anyhow::Result;
-use uuid::Uuid;
 
 use crate::domain::entity::{Company, CompanyEntityType, CompanyStatus};
 
@@ -58,7 +57,6 @@ pub struct CompanyFilter {
     pub province: Option<String>,
     pub postal_code: Option<String>,
     pub country: Option<String>,
-    pub parent_company_id: Option<Uuid>,
     pub is_default: Option<bool>,
     pub status: Option<CompanyStatus>,
     pub notes: Option<String>,
@@ -67,7 +65,7 @@ pub struct CompanyFilter {
 impl CompanyFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.code.is_some() || self.legal_name.is_some() || self.trade_name.is_some() || self.npwp.is_some() || self.nib.is_some() || self.entity_type.is_some() || self.base_currency.is_some() || self.email.is_some() || self.phone.is_some() || self.address.is_some() || self.city.is_some() || self.province.is_some() || self.postal_code.is_some() || self.country.is_some() || self.parent_company_id.is_some() || self.is_default.is_some() || self.status.is_some() || self.notes.is_some()
+        self.code.is_some() || self.legal_name.is_some() || self.trade_name.is_some() || self.npwp.is_some() || self.nib.is_some() || self.entity_type.is_some() || self.base_currency.is_some() || self.email.is_some() || self.phone.is_some() || self.address.is_some() || self.city.is_some() || self.province.is_some() || self.postal_code.is_some() || self.country.is_some() || self.is_default.is_some() || self.status.is_some() || self.notes.is_some()
     }
 }
 

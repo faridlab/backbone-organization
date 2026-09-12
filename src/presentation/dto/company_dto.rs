@@ -79,8 +79,6 @@ pub struct CreateCompanyDto {
     pub postal_code: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub country: String,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "parent_company_id")]
-    pub parent_company_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(alias = "is_default")]
     pub is_default: bool,
@@ -148,8 +146,6 @@ pub struct UpdateCompanyDto {
     pub postal_code: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub country: String,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "parent_company_id")]
-    pub parent_company_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(alias = "is_default")]
     pub is_default: bool,
@@ -219,8 +215,6 @@ pub struct PatchCompanyDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "parent_company_id")]
-    pub parent_company_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "is_default")]
     pub is_default: Option<bool>,
@@ -234,7 +228,7 @@ pub struct PatchCompanyDto {
 impl PatchCompanyDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.code.is_some() || self.legal_name.is_some() || self.trade_name.is_some() || self.npwp.is_some() || self.nib.is_some() || self.entity_type.is_some() || self.base_currency.is_some() || self.fiscal_year_start_month.is_some() || self.email.is_some() || self.phone.is_some() || self.address.is_some() || self.city.is_some() || self.province.is_some() || self.postal_code.is_some() || self.country.is_some() || self.parent_company_id.is_some() || self.is_default.is_some() || self.status.is_some() || self.notes.is_some()
+        self.code.is_some() || self.legal_name.is_some() || self.trade_name.is_some() || self.npwp.is_some() || self.nib.is_some() || self.entity_type.is_some() || self.base_currency.is_some() || self.fiscal_year_start_month.is_some() || self.email.is_some() || self.phone.is_some() || self.address.is_some() || self.city.is_some() || self.province.is_some() || self.postal_code.is_some() || self.country.is_some() || self.is_default.is_some() || self.status.is_some() || self.notes.is_some()
     }
 }
 
@@ -272,7 +266,6 @@ pub struct CompanyResponseDto {
     pub postal_code: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub country: String,
-    pub parent_company_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     pub is_default: bool,
     pub status: CompanyStatus,
@@ -363,7 +356,6 @@ impl From<Company> for CompanyResponseDto {
             province: entity.province,
             postal_code: entity.postal_code,
             country: entity.country,
-            parent_company_id: entity.parent_company_id,
             is_default: entity.is_default,
             status: entity.status,
             notes: entity.notes,
@@ -404,7 +396,6 @@ impl From<CreateCompanyDto> for Company {
             province: dto.province,
             postal_code: dto.postal_code,
             country: dto.country,
-            parent_company_id: dto.parent_company_id,
             is_default: dto.is_default,
             status: dto.status,
             notes: dto.notes,
@@ -432,7 +423,6 @@ impl From<&Company> for CompanyResponseDto {
             province: entity.province.clone(),
             postal_code: entity.postal_code.clone(),
             country: entity.country.clone(),
-            parent_company_id: entity.parent_company_id.clone(),
             is_default: entity.is_default.clone(),
             status: entity.status.clone(),
             notes: entity.notes.clone(),
@@ -464,7 +454,6 @@ impl backbone_core::ApplyUpdateDto<UpdateCompanyDto> for Company {
         self.province = dto.province;
         self.postal_code = dto.postal_code;
         self.country = dto.country;
-        self.parent_company_id = dto.parent_company_id;
         self.is_default = dto.is_default;
         self.status = dto.status;
         self.notes = dto.notes;

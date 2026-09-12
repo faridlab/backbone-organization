@@ -28,6 +28,10 @@ pub use company_service::CompanyService;
 pub use company_industry_service::CompanyIndustryService;
 pub use department_service::DepartmentService;
 pub use industry_service::IndustryService;
+pub use level_service::LevelService;
+pub use org_unit_service::OrgUnitService;
+pub use position_service::PositionService;
+pub use structure_service::StructureService;
 // <<< CUSTOM
 pub use onboarding_service::{
     validate_npwp, OnboardError, OnboardRequest, OnboardResult, OnboardingService,
@@ -37,10 +41,4 @@ pub use hierarchy_service::{
     BranchHierarchy, CompanyHierarchy, CompanyInfo, DepartmentNode, HierarchyError,
     HierarchyService,
 };
-// END CUSTOM
-pub use level_service::LevelService;
-pub use org_unit_service::OrgUnitService;
-pub use position_service::PositionService;
-pub use structure_service::StructureService;
-// <<< CUSTOM
 // END CUSTOM

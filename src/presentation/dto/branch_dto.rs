@@ -34,9 +34,6 @@ use crate::domain::entity::OrgStatus;
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CreateBranchDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub code: String,
@@ -87,9 +84,6 @@ pub struct CreateBranchDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateBranchDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub code: String,
@@ -140,9 +134,6 @@ pub struct UpdateBranchDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct PatchBranchDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -187,7 +178,7 @@ pub struct PatchBranchDto {
 impl PatchBranchDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.code.is_some() || self.name.is_some() || self.branch_type.is_some() || self.is_head_office.is_some() || self.npwp.is_some() || self.email.is_some() || self.phone.is_some() || self.address.is_some() || self.city.is_some() || self.province.is_some() || self.postal_code.is_some() || self.country.is_some() || self.status.is_some()
+        self.code.is_some() || self.name.is_some() || self.branch_type.is_some() || self.is_head_office.is_some() || self.npwp.is_some() || self.email.is_some() || self.phone.is_some() || self.address.is_some() || self.city.is_some() || self.province.is_some() || self.postal_code.is_some() || self.country.is_some() || self.status.is_some()
     }
 }
 
@@ -205,8 +196,6 @@ impl PatchBranchDto {
 pub struct BranchResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub code: String,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
@@ -281,9 +270,9 @@ impl BranchListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct BranchSummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub code: String,
     pub name: String,
+    pub branch_type: BranchType,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -295,7 +284,6 @@ impl From<Branch> for BranchResponseDto {
     fn from(entity: Branch) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             code: entity.code,
             name: entity.name,
             branch_type: entity.branch_type,
@@ -319,9 +307,9 @@ impl From<Branch> for BranchSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             code: entity.code,
             name: entity.name,
+            branch_type: entity.branch_type,
             created_at,
         }
     }
@@ -331,7 +319,6 @@ impl From<CreateBranchDto> for Branch {
     fn from(dto: CreateBranchDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             code: dto.code,
             name: dto.name,
             branch_type: dto.branch_type,
@@ -354,7 +341,6 @@ impl From<&Branch> for BranchResponseDto {
     fn from(entity: &Branch) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             code: entity.code.clone(),
             name: entity.name.clone(),
             branch_type: entity.branch_type.clone(),
@@ -381,7 +367,6 @@ impl backbone_core::FromCreateDto<CreateBranchDto> for Branch {
 
 impl backbone_core::ApplyUpdateDto<UpdateBranchDto> for Branch {
     fn apply_update(mut self, dto: UpdateBranchDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.code = dto.code;
         self.name = dto.name;
         self.branch_type = dto.branch_type;

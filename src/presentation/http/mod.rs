@@ -27,14 +27,12 @@ pub use company_handler::{create_company_routes, create_company_read_routes, cre
 pub use company_industry_handler::{create_company_industry_routes, create_company_industry_read_routes, create_company_industry_write_routes};
 pub use department_handler::{create_department_routes, create_department_read_routes, create_department_write_routes};
 pub use industry_handler::{create_industry_routes, create_industry_read_routes, create_industry_write_routes};
-// <<< CUSTOM
-pub use onboarding_handler::{create_onboarding_routes, create_organization_routes};
-pub use guarded_routes::{create_guarded_organization_routes, create_guarded_organization_routes_checked, require_known_company};
-pub use hierarchy_handler::create_hierarchy_routes;
-// END CUSTOM
 pub use level_handler::{create_level_routes, create_level_read_routes, create_level_write_routes};
 pub use org_unit_handler::{create_org_unit_routes, create_org_unit_read_routes, create_org_unit_write_routes};
 pub use position_handler::{create_position_routes, create_position_read_routes, create_position_write_routes};
 pub use structure_handler::{create_structure_routes, create_structure_read_routes, create_structure_write_routes};
 // <<< CUSTOM
+pub use onboarding_handler::{create_onboarding_routes, create_organization_routes};
+pub use guarded_routes::{create_guarded_organization_routes, create_guarded_organization_routes_checked, require_known_company};
+pub use hierarchy_handler::create_hierarchy_routes;
 // END CUSTOM
