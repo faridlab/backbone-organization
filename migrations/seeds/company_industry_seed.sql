@@ -6,7 +6,6 @@
 
 -- INSERT INTO organization.company_industries (
 --     id,
---     company_id,
 --     industry_id,
 --     is_primary,
 --     metadata

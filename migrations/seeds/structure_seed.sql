@@ -6,7 +6,6 @@
 
 -- INSERT INTO organization.structures (
 --     id,
---     company_id,
 --     name,
 --     parent_id,
 --     manager_id,

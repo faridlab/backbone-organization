@@ -6,7 +6,6 @@
 
 -- INSERT INTO organization.departments (
 --     id,
---     company_id,
 --     code,
 --     name,
 --     parent_id,

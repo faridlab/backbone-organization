@@ -6,7 +6,6 @@
 
 -- INSERT INTO organization.levels (
 --     id,
---     company_id,
 --     name,
 --     grade,
 --     order_number,

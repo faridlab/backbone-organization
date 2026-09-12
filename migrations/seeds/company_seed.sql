@@ -21,7 +21,6 @@
 --     province,
 --     postal_code,
 --     country,
---     parent_company_id,
 --     is_default,
 --     status,
 --     notes,

@@ -6,7 +6,6 @@
 
 -- INSERT INTO organization.positions (
 --     id,
---     company_id,
 --     name,
 --     code,
 --     description,

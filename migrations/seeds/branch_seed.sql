@@ -6,7 +6,6 @@
 
 -- INSERT INTO organization.branches (
 --     id,
---     company_id,
 --     code,
 --     name,
 --     branch_type,
