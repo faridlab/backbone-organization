@@ -6,12 +6,21 @@
 //!
 //! Thin newtype over `backbone_orm::GenericCrudRepository<Branch, backbone_orm::SoftDelete>`.
 //! All standard CRUD methods are available via `Deref`.
+//!
+//! RLS LAW (ADR-0029): the module is tenant-agnostic and ships no row fence. Branch rows carry no
+//! company column — a branch's place in the org tree is its `org_units` node (id = branch id,
+//! kind = 'branch'), minted in the same transaction as the branch row. Isolation is installed by
+//! the COMPOSING service's tenancy decorator.
 
 use anyhow::Result;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use backbone_orm::company_scope;
+// The typed multi-row read twin lives only in the legacy `company_scope` module. Its
+// connection discipline is what this repository needs — request-dedicated connection when the
+// composing service bound one, plain pool otherwise. The helper's legacy task-local branch is
+// never taken: this module sets no legacy scope of its own (ADR-0029).
+use backbone_orm::company_scope::fetch_all_scoped;
 
 use crate::domain::entity::Branch;
 
@@ -41,11 +50,13 @@ impl BranchRepository {
 /// The exact row a validated branch creation writes.
 ///
 /// Mirrors the raw column shape rather than the `Branch` entity: `branch_type` binds as `&str` and is
-/// cast at the DB (`$5::branch_type`), so a bad value fails as a DB error rather than a deserialize
-/// panic. The NPWP is expected already validated by the caller.
+/// cast at the DB (`$4::branch_type`), so a bad value fails as a DB error rather than a deserialize
+/// panic. The NPWP is expected already validated by the caller. `parent_unit` is the org-units node
+/// the branch attaches under (a company or an ancestor branch) — it names the NODE row, not a
+/// column on branches.
 pub struct NewBranchRow<'a> {
     pub id: Uuid,
-    pub company_id: Uuid,
+    pub parent_unit: Uuid,
     pub code: &'a str,
     pub name: &'a str,
     pub branch_type: &'a str,
@@ -59,57 +70,74 @@ pub struct NewBranchRow<'a> {
 /// Hand-written Branch SQL. Lives here (not in the write service) per the module's 4-layer rule:
 /// services orchestrate, repositories hold the SQL.
 impl BranchRepository {
-    /// Create a branch.
-    ///
-    /// RLS scope (ADR-0008), DTO-company pattern: the company is on the DTO — the caller wraps this in
-    /// `with_company_scope(Some(company_id))` because the INSERT's WITH CHECK needs `app.company_id`
-    /// bound or it is rejected under the app role.
-    pub async fn insert_branch(
+    /// Create a branch on the CALLER'S transaction — the branch row and its org-units node commit
+    /// (or roll back) as one unit with the caller's unit of work.
+    pub async fn insert_branch_on(
         &self,
-        pool: &PgPool,
+        conn: &mut sqlx::PgConnection,
         b: &NewBranchRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        company_scope::execute_scoped(
-            pool,
-            sqlx::query(
-                r#"INSERT INTO organization.branches
-                    (id, company_id, code, name, branch_type, is_head_office, npwp, email, phone, address, status)
-                   VALUES ($1,$2,$3,$4,$5::branch_type,$6,$7,$8,$9,$10,'active'::org_status)"#,
-            )
-            .bind(b.id)
-            .bind(b.company_id)
-            .bind(b.code)
-            .bind(b.name)
-            .bind(b.branch_type)
-            .bind(b.is_head_office)
-            .bind(b.npwp)
-            .bind(b.email)
-            .bind(b.phone)
-            .bind(b.address),
+        sqlx::query(
+            r#"INSERT INTO organization.branches
+                (id, code, name, branch_type, is_head_office, npwp, email, phone, address, status)
+               VALUES ($1,$2,$3,$4::branch_type,$5,$6,$7,$8,$9,'active'::org_status)"#,
         )
+        .bind(b.id)
+        .bind(b.code)
+        .bind(b.name)
+        .bind(b.branch_type)
+        .bind(b.is_head_office)
+        .bind(b.npwp)
+        .bind(b.email)
+        .bind(b.phone)
+        .bind(b.address)
+        .execute(conn)
         .await?;
         Ok(())
     }
 
-    /// The company a branch belongs to — the link probe behind the same-company invariant. `Ok(None)`
-    /// = no such live branch.
-    ///
-    /// RLS scope (ADR-0008), param-company pattern: the caller wraps this in
-    /// `with_company_scope(Some(company_id))` to fence the probe, and keeps its explicit
-    /// `c != company_id` check as defense-in-depth on top of that fence.
-    pub async fn find_owner_company(
+    /// Mint the branch's org-units node on the CALLER'S transaction — kind 'branch', parent the
+    /// caller-validated `parent_unit` (a company node or an ancestor branch node). The node id IS
+    /// the branch id (ADR-0028 spine contract: ids are stable, references in consuming modules
+    /// already point at valid nodes).
+    pub async fn insert_branch_node_on(
+        &self,
+        conn: &mut sqlx::PgConnection,
+        branch_id: Uuid,
+        parent_unit: Uuid,
+        code: &str,
+        name: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"INSERT INTO organization.org_units (id, kind, parent_id, code, name)
+               VALUES ($1, 'branch', $2, $3, $4)"#,
+        )
+        .bind(branch_id)
+        .bind(parent_unit)
+        .bind(code)
+        .bind(name)
+        .execute(conn)
+        .await?;
+        Ok(())
+    }
+
+    /// Whether a live (non-soft-deleted) branch exists — the department link probe. A branch id
+    /// outside the caller's visible scope is simply absent (the composing service's decorator
+    /// fences the read, ADR-0029).
+    pub async fn exists_live(
         &self,
         pool: &PgPool,
         branch_id: Uuid,
-    ) -> Result<Option<Uuid>, sqlx::Error> {
-        company_scope::fetch_optional_scalar_scoped(
+    ) -> Result<bool, sqlx::Error> {
+        let row = backbone_orm::org_scope::fetch_optional_row_scoped(
             pool,
-            sqlx::query_scalar(
-                "SELECT company_id FROM organization.branches WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
+            sqlx::query(
+                "SELECT id FROM organization.branches WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
             )
             .bind(branch_id),
         )
-        .await
+        .await?;
+        Ok(row.is_some())
     }
 }
 
@@ -117,22 +145,19 @@ impl BranchRepository {
 ///
 /// A deliberately narrower column set than [`NewBranchRow`]: onboarding only knows the code and
 /// name, and the statement must stay verbatim rather than bind NULLs into columns it never named.
+/// The org-units node (under the freshly minted company node) is minted by
+/// [`Self::insert_branch_node_on`] in the same transaction.
 pub struct NewHeadOfficeBranchRow<'a> {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub code: &'a str,
     pub name: &'a str,
 }
 
 /// Hand-written Branch SQL for the onboarding unit of work.
 impl BranchRepository {
-    /// Create the head-office branch for a company being onboarded.
-    ///
-    /// Takes the CALLER'S connection: this must commit as one unit with the company INSERT that
-    /// precedes it, or a failure here would leave a company with no branch. Unlike
-    /// [`Self::insert_branch`], it does NOT scope — the caller's transaction is already the unit of
-    /// work, and the company it writes under is being created in that same uncommitted transaction,
-    /// so there is no established company scope to bind to.
+    /// Create the head-office branch for a company being onboarded, on the CALLER'S transaction —
+    /// it must commit as one unit with the company INSERT and both org-units nodes that precede
+    /// and follow it.
     pub async fn insert_head_office_on(
         &self,
         conn: &mut sqlx::PgConnection,
@@ -140,11 +165,10 @@ impl BranchRepository {
     ) -> Result<(), sqlx::Error> {
         sqlx::query(
             r#"INSERT INTO organization.branches
-                (id, company_id, code, name, branch_type, is_head_office, status)
-               VALUES ($1,$2,$3,$4,'head_office'::branch_type,TRUE,'active'::org_status)"#,
+                (id, code, name, branch_type, is_head_office, status)
+               VALUES ($1,$2,$3,'head_office'::branch_type,TRUE,'active'::org_status)"#,
         )
         .bind(b.id)
-        .bind(b.company_id)
         .bind(b.code)
         .bind(b.name)
         .execute(conn)
@@ -168,23 +192,24 @@ pub struct BranchHierarchyRow {
 
 /// Hand-written Branch SQL for the hierarchy read.
 impl BranchRepository {
-    /// All live (non-soft-deleted) branches of `company_id`, head office first.
-    /// Company-scoped via `fetch_all_scoped` (ADR-0008) — under the
-    /// company-scoped app role only the request's own company returns rows.
-    pub async fn list_live_by_company(
+    /// All live (non-soft-deleted) branches under one company's org-units SUBTREE (the company
+    /// node, its branches, and chained head-office descendants — the same membership the old
+    /// company column expressed), head office first.
+    pub async fn list_live_by_unit(
         &self,
         pool: &PgPool,
-        company_id: Uuid,
+        company_unit: Uuid,
     ) -> Result<Vec<BranchHierarchyRow>, sqlx::Error> {
-        company_scope::fetch_all_scoped(
+        fetch_all_scoped(
             pool,
             sqlx::query_as::<_, BranchHierarchyRow>(
-                "SELECT id, code, name, branch_type::text, is_head_office, city, status::text \
-                 FROM organization.branches \
-                 WHERE company_id=$1 AND (metadata->>'deleted_at') IS NULL \
-                 ORDER BY is_head_office DESC, code",
+                r#"SELECT b.id, b.code, b.name, b.branch_type::text, b.is_head_office, b.city, b.status::text
+                   FROM organization.branches b
+                   WHERE b.id IN (SELECT organization.org_unit_subtree(ARRAY[$1]))
+                     AND (b.metadata->>'deleted_at') IS NULL
+                   ORDER BY b.is_head_office DESC, b.code"#,
             )
-            .bind(company_id),
+            .bind(company_unit),
         )
         .await
     }

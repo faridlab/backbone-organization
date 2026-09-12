@@ -3,14 +3,15 @@
 //! The guarded composition (`create_guarded_organization_routes`) must enforce the org
 //! invariants on EVERY write path, not just onboarding:
 //!   - Company has no generic write route at all (writer = onboarding only).
-//!   - Branch/Department writes validate NPWP format, company existence, and same-company links.
-//!   - Branch/Department writes derive their tenant from a signed token, never from the body.
+//!   - Branch/Department writes validate NPWP format, node kind, and link visibility.
+//!   - Branch writes derive their attach point from a signed token, never from the body.
 //! These hit the ROUTES (via tower oneshot), not the services — closing the structural blind spot
 //! the golden suite had (it only ever constructed services directly).
 //! Requires DATABASE_URL (defaults to local dev Postgres on :5433).
 //!
 //! IGC-1..IGC-4  the CRUD-bypass and validated-write invariants.
 //! IGT-1..IGT-3  the tenancy invariants (mirrors the TG-* cases backbone-pos proved).
+//! IGF-1..IGF-2  the module-native fence posture (ADR-0029 half-fence, default-deny).
 
 use axum::body::Body;
 use axum::http::{header, Request, StatusCode};
@@ -90,14 +91,29 @@ fn code(prefix: &str) -> String {
     format!("{prefix}-{}", &Uuid::new_v4().simple().to_string()[..8])
 }
 
+/// Seed a company registry row AND its org-units node under the tenant root — the node is
+/// what branch creation validates and attaches under (ADR-0028: a company's node id IS the
+/// company id).
 async fn seed_company(pool: &PgPool, code: &str) -> Uuid {
     let id = Uuid::new_v4();
+    let mut tx = pool.begin().await.unwrap();
     sqlx::query("INSERT INTO organization.companies (id, code, legal_name) VALUES ($1,$2,'PT Seed')")
         .bind(id)
         .bind(code)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .unwrap();
+    sqlx::query(
+        "INSERT INTO organization.org_units (id, kind, parent_id, code, name) \
+         SELECT $1, 'company', r.id, $2, 'PT Seed' FROM organization.org_units r \
+         WHERE r.kind = 'root' LIMIT 1",
+    )
+    .bind(id)
+    .bind(code)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
     id
 }
 
@@ -128,31 +144,34 @@ async fn guarded_branch_rejects_bad_npwp() {
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "bad NPWP must be rejected");
 }
 
-// ── IGC-3: validated department create rejects a cross-company parent ──
+// ── IGC-3: validated department create rejects a parent that does not exist ──
+// Cross-scope invisibility (a link outside the caller's subtree reads as absent) needs the
+// composing service's decorator and is proven by its probes; undecorated, the invariant this
+// module owns is that a dangling link is refused before any write.
 #[tokio::test]
-async fn guarded_department_rejects_cross_company_parent() {
+async fn guarded_department_rejects_dangling_parent() {
     let pool = pool().await;
     let host = seed_company(&pool, &code("HOST")).await;
-    let other = seed_company(&pool, &code("OTHER")).await;
-    let foreign_parent = Uuid::new_v4();
-    sqlx::query("INSERT INTO organization.departments (id, company_id, code, name) VALUES ($1,$2,'ROOT','Root')")
-        .bind(foreign_parent)
-        .bind(other)
-        .execute(&pool)
-        .await
-        .unwrap();
+    let ghost_parent = Uuid::new_v4();
 
-    // The caller is a principal of `host`; the parent belongs to `other`.
     let body = format!(
-        r#"{{"code":"{}","name":"Cross","parentId":"{foreign_parent}"}}"#,
+        r#"{{"code":"{}","name":"Cross","parentId":"{ghost_parent}"}}"#,
         code("DEP")
     );
     let status = send_as(app(&module(&pool).await), host, "POST", "/departments", &body).await;
     assert_eq!(
         status,
         StatusCode::UNPROCESSABLE_ENTITY,
-        "cross-company parent must be rejected"
+        "a parent that does not exist must be rejected"
     );
+
+    // And the refusal wrote nothing.
+    let n: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM organization.departments WHERE parent_id = $1")
+        .bind(ghost_parent)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(n, 0, "no row may be written for a refused link");
 }
 
 // ── IGC-4: the happy paths still work through the guarded surface ──
@@ -166,11 +185,10 @@ async fn guarded_valid_writes_succeed() {
     let bs = send_as(app(&module(&pool).await), cid, "POST", "/branches", &branch_body).await;
     assert_eq!(bs, StatusCode::CREATED, "valid branch should be created");
 
-    // Valid department (same-company parent).
+    // Valid department (visible live parent).
     let parent = Uuid::new_v4();
-    sqlx::query("INSERT INTO organization.departments (id, company_id, code, name) VALUES ($1,$2,$3,'Root')")
+    sqlx::query("INSERT INTO organization.departments (id, code, name) VALUES ($1,$2,'Root')")
         .bind(parent)
-        .bind(cid)
         .bind(code("PR"))
         .execute(&pool)
         .await
@@ -217,8 +235,10 @@ async fn guarded_write_rejects_token_without_company_id() {
     assert_eq!(status, StatusCode::UNAUTHORIZED, "a token with no tenant must not write");
 }
 
-// ── IGT-3: a `companyId` smuggled in the body is ignored — the persisted tenant is the token's.
-// This is the regression that motivated the change: the body must not name the tenant. ──
+// ── IGT-3: a `companyId` smuggled in the body is ignored — the persisted placement is the
+// token's. This is the regression that motivated the change: the body must not name where a
+// write lands. A branch's landing spot is its org-units node's parent; a department carries no
+// tenant axis at all (ADR-0029), so its smuggle is ignored by construction. ──
 #[tokio::test]
 async fn body_company_id_cannot_override_the_token_tenant() {
     let pool = pool().await;
@@ -233,16 +253,19 @@ async fn body_company_id_cannot_override_the_token_tenant() {
     let status = send_as(app(&module(&pool).await), token_company, "POST", "/branches", &body).await;
     assert_eq!(status, StatusCode::CREATED);
 
-    let persisted: Uuid =
-        sqlx::query_scalar("SELECT company_id FROM organization.branches WHERE code = $1")
-            .bind(&branch_code)
-            .fetch_one(&pool)
-            .await
-            .expect("branch row");
-    assert_eq!(persisted, token_company, "tenant must come from the token, not the body");
+    // The branch's node attaches under the TOKEN's company node — the body's id was ignored.
+    let persisted: Uuid = sqlx::query_scalar(
+        "SELECT u.parent_id FROM organization.org_units u \
+         WHERE u.id = (SELECT b.id FROM organization.branches b WHERE b.code = $1)",
+    )
+    .bind(&branch_code)
+    .fetch_one(&pool)
+    .await
+    .expect("branch node");
+    assert_eq!(persisted, token_company, "placement must come from the token, not the body");
     assert_ne!(persisted, attacker_company, "the body's companyId must be ignored");
 
-    // Department: same smuggle, same verdict.
+    // Department: same smuggle — it lands (no tenant axis to forge) and the body's id is inert.
     let dept_code = code("SMUGD");
     let dbody = format!(
         r#"{{"companyId":"{attacker_company}","code":"{dept_code}","name":"Smuggled"}}"#
@@ -251,40 +274,80 @@ async fn body_company_id_cannot_override_the_token_tenant() {
         send_as(app(&module(&pool).await), token_company, "POST", "/departments", &dbody).await;
     assert_eq!(dstatus, StatusCode::CREATED);
 
-    let dpersisted: Uuid =
-        sqlx::query_scalar("SELECT company_id FROM organization.departments WHERE code = $1")
+    let drow: Uuid =
+        sqlx::query_scalar("SELECT id FROM organization.departments WHERE code = $1")
             .bind(&dept_code)
             .fetch_one(&pool)
             .await
             .expect("department row");
-    assert_eq!(dpersisted, token_company, "tenant must come from the token, not the body");
-    assert_ne!(dpersisted, attacker_company, "the body's companyId must be ignored");
+    assert_ne!(drow, attacker_company, "the body's companyId names nothing on this row");
 }
 
-// IGC-5: onboarding must pass the RLS fence as a NON-OWNER role. The head-office branch table is
-// FORCE row-level-security fenced (company subtree of the session's bound company) and the onboard
-// flow runs before any tenant exists — every other probe runs on the owner DSN, and the table
-// owner BYPASSES row-level security, so an unscoped branch insert passed them all while failing
-// (500) on any app-style role. The service binds the freshly minted company onto the transaction;
-// this probe fails if that binding is ever lost. Requires the fence migrations to be applied and
-// DATABASE_URL to be a role that may CREATE ROLE (the dev owner DSN qualifies).
+// IGF-1: module-native fence posture (ADR-0029). The six per-unit master tables ship the
+// HALF-FENCE: RLS enabled + FORCED with ZERO policies — default-deny for any non-owner role
+// until the composing service's decorator installs the org-scope policies. companies and
+// org_units carry no tenant axis at all and stay unfenced under any declaration. This probe
+// fails if the strip migration ever leaves a stray policy behind (a leak) or disarms the flags
+// (a silent bypass).
 #[tokio::test]
-async fn onboard_passes_rls_as_non_owner_role() {
+async fn half_fence_posture_is_armed_and_policy_free() {
+    let pool = pool().await;
+
+    for table in [
+        "branches",
+        "departments",
+        "company_industries",
+        "levels",
+        "positions",
+        "structures",
+    ] {
+        let (rls, force): (bool, bool) = sqlx::query_as(&format!(
+            "SELECT relrowsecurity, relforcerowsecurity FROM pg_class \
+             WHERE oid = 'organization.{table}'::regclass"
+        ))
+        .fetch_one(&pool)
+        .await
+        .expect("table must exist");
+        assert!(rls && force, "organization.{table} must ship RLS ENABLED + FORCE");
+
+        let policies: i64 = sqlx::query_scalar(&format!(
+            "SELECT COUNT(*) FROM pg_policies WHERE schemaname = 'organization' AND tablename = '{table}'"
+        ))
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(policies, 0, "organization.{table} must ship ZERO policies (decorator owns them)");
+    }
+
+    for table in ["companies", "org_units", "industries"] {
+        let rls: bool = sqlx::query_scalar(&format!(
+            "SELECT relrowsecurity FROM pg_class WHERE oid = 'organization.{table}'::regclass"
+        ))
+        .fetch_one(&pool)
+        .await
+        .expect("table must exist");
+        assert!(!rls, "organization.{table} is the unfenced registry/tree (ADR-0029)");
+    }
+
+    // The legacy fence helper is gone; the spine helper stays.
+    let subtree: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'org_unit_subtree')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(subtree, "org_unit_subtree must exist (the spine helper)");
+}
+
+// IGF-2: the half-fence actually denies a non-owner role. Every other probe runs on the owner
+// DSN, and the table owner BYPASSES row-level security — this is the only leg that proves the
+// default-deny is real: a granted role reads zero rows and cannot insert. The module-native
+// contract is deliberately unusable-as-is; the composing decorator opens it per-scope.
+#[tokio::test]
+async fn half_fence_default_denies_non_owner_role() {
     const ROLE: &str = "org_rls_probe";
     const PW: &str = "org_rls_probe_pw";
     let admin = pool().await;
-
-    // Precondition: the probe only means something when the branch fence is live.
-    let fenced: bool = sqlx::query_scalar(
-        "SELECT relforcerowsecurity FROM pg_class WHERE oid = 'organization.branches'::regclass",
-    )
-    .fetch_one(&admin)
-    .await
-    .unwrap();
-    assert!(
-        fenced,
-        "organization.branches must have FORCE RLS for this probe to mean anything"
-    );
 
     sqlx::raw_sql(&format!(
         "DO $$ BEGIN \
@@ -304,35 +367,38 @@ async fn onboard_passes_rls_as_non_owner_role() {
     let after_at = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5433/backbone_organization".to_string());
     let after_at = after_at.rsplit('@').next().unwrap();
-    let app_pool = PgPool::connect(&format!("postgresql://{ROLE}:{PW}@{after_at}")).await.unwrap();
+    let probe = PgPool::connect(&format!("postgresql://{ROLE}:{PW}@{after_at}")).await.unwrap();
 
-    // Onboarding is unauthenticated by design — it creates the tenant. No bearer token.
-    let onboard_code = code("RLSON");
-    let body = format!(
-        r#"{{"code":"{onboard_code}","legal_name":"PT Rls Onboard","base_currency":"IDR"}}"#
-    );
-    let (status, resp) =
-        send_with(app(&module(&app_pool).await), "POST", "/companies/onboard", &body, None).await;
-    assert_eq!(
-        status,
-        StatusCode::CREATED,
-        "onboard must pass the branch fence as a non-owner role; got {status}: {resp}"
-    );
+    // Seed rows as owner so the read has something to be denied.
+    let cid = seed_company(&admin, &code("DENY")).await;
 
-    // The head-office branch landed and belongs to the company it created.
-    let branch_company: Uuid = sqlx::query_scalar(
-        "SELECT b.company_id FROM organization.branches b \
-         JOIN organization.companies c ON c.id = b.company_id \
-         WHERE c.code = $1",
-    )
-    .bind(&onboard_code)
-    .fetch_one(&admin)
-    .await
-    .expect("head-office branch row for the onboarded company");
-    let company: Uuid = sqlx::query_scalar("SELECT id FROM organization.companies WHERE code = $1")
-        .bind(&onboard_code)
-        .fetch_one(&admin)
+    let seen: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM organization.branches")
+        .fetch_one(&probe)
+        .await
+        .expect("SELECT must run (granted) — RLS filters it to zero");
+    assert_eq!(seen, 0, "a granted non-owner role must see zero branch rows (default-deny)");
+
+    // The registry and tree stay readable — they carry no tenant axis.
+    let companies: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM organization.companies WHERE id = $1")
+        .bind(cid)
+        .fetch_one(&probe)
         .await
         .unwrap();
-    assert_eq!(branch_company, company, "the head-office branch must sit in its own company");
+    assert_eq!(companies, 1, "the unfenced registry stays readable to a granted role");
+
+    // And the write is refused outright (FORCE + no policy = RLS violation).
+    let insert = sqlx::query(
+        "INSERT INTO organization.branches (id, code, name) VALUES ($1,'DENY','Denied')",
+    )
+    .bind(Uuid::new_v4())
+    .execute(&probe)
+    .await;
+    assert!(
+        insert.is_err(),
+        "a non-owner INSERT into the half-fenced table must be refused"
+    );
+
+    // Onboarding as a non-owner role therefore fails loudly too — by design. The module
+    // expects owner/decorator-managed roles; the composing service's onboarding lane runs
+    // where the fence is installed. (Golden case 1 proves the owner path.)
 }

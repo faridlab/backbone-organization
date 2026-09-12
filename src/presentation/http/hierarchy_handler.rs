@@ -2,8 +2,8 @@
 //!
 //! Exposes one non-CRUD read endpoint:
 //!   GET /companies/{id}/hierarchy → the company, its branches (HQ flagged), and the
-//!   full department tree nested under each branch (and company-level where branch_id
-//!   is null). Assembled by [`HierarchyService`] from three repository reads.
+//!   department tree nested under each branch. A department's placement IS its branch
+//!   (ADR-0029): one anchored at no visible branch does not appear in the tree at all.
 
 use std::sync::Arc;
 
@@ -122,9 +122,6 @@ impl From<BranchHierarchy> for BranchDto {
 pub struct HierarchyResponse {
     company: CompanyDto,
     branches: Vec<BranchDto>,
-    /// Company-level departments (`branch_id` null). Omitted when empty.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    departments: Vec<DepartmentDto>,
 }
 
 impl From<CompanyHierarchy> for HierarchyResponse {
@@ -132,7 +129,6 @@ impl From<CompanyHierarchy> for HierarchyResponse {
         Self {
             company: h.company.into(),
             branches: h.branches.into_iter().map(BranchDto::from).collect(),
-            departments: h.departments.into_iter().map(DepartmentDto::from).collect(),
         }
     }
 }

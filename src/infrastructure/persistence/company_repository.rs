@@ -6,12 +6,16 @@
 //!
 //! Thin newtype over `backbone_orm::GenericCrudRepository<Company, backbone_orm::SoftDelete>`.
 //! All standard CRUD methods are available via `Deref`.
+//!
+//! RLS LAW (ADR-0029): companies is the registry of legal entities and carries NO tenant axis —
+//! it is intentionally unfenced under any declaration (see schema/models/index.model.yaml). Every
+//! read here is a plain pool read on purpose. The org-units node helpers at the bottom are the
+//! tree side of the same design: a company's place in the group tree is its org_units node
+//! (id = company id, kind 'company'), minted in the same transaction as the company row.
 
 use anyhow::Result;
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use backbone_orm::company_scope;
 
 use crate::domain::entity::Company;
 
@@ -43,16 +47,14 @@ impl CompanyRepository {
 impl CompanyRepository {
     /// Probe whether a live (non-soft-deleted) company exists.
     ///
-    /// The caller wraps this in `with_company_scope(Some(id))` — the id being probed IS the company, so
-    /// the probe is fenced to it (ADR-0008).
+    /// A PLAIN read: companies carries no tenant axis and is never fenced — the registry is
+    /// visible to any authenticated caller; scoping lives in the org tree, not here (ADR-0029).
     pub async fn find_live_id(&self, pool: &PgPool, id: Uuid) -> Result<Option<Uuid>, sqlx::Error> {
-        company_scope::fetch_optional_scalar_scoped(
-            pool,
-            sqlx::query_scalar(
-                "SELECT id FROM organization.companies WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
-            )
-            .bind(id),
+        sqlx::query_scalar(
+            "SELECT id FROM organization.companies WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
         )
+        .bind(id)
+        .fetch_optional(pool)
         .await
     }
 }
@@ -79,11 +81,10 @@ pub struct NewCompanyRow<'a> {
 impl CompanyRepository {
     /// Probe whether a live company already holds `code`. `Ok(None)` = the code is free.
     ///
-    /// Deliberately UNSCOPED, unlike [`Self::find_live_id`]: company-code uniqueness is a
-    /// cross-company question asked before the company exists, so there is no company to fence to —
-    /// and binding an ambient scope here would hide a conflicting company and let the probe wrongly
-    /// report the code free. The partial unique index is the real arbiter; this is only a fast
-    /// pre-check.
+    /// A PLAIN read, on purpose: company-code uniqueness is a cross-company question asked
+    /// before the company exists, and the registry is unfenced (ADR-0029). Binding any scope
+    /// here would hide a conflicting company and let the probe wrongly report the code free.
+    /// The partial unique index is the real arbiter; this is only a fast pre-check.
     pub async fn find_live_id_by_code(
         &self,
         pool: &PgPool,
@@ -99,8 +100,9 @@ impl CompanyRepository {
 
     /// Create a company.
     ///
-    /// Takes the CALLER'S connection so the company and its head-office branch commit as one unit.
-    /// Not scoped: the company being written IS the scope, and it does not exist yet.
+    /// Takes the CALLER'S connection so the company, its org-units node, and its head-office
+    /// branch commit as one unit. Not scoped: the company being written IS a registry row with
+    /// no tenant axis (ADR-0029).
     ///
     /// **Leaks `sqlx::Error` deliberately** — the caller discriminates on `is_unique_violation()`
     /// and on the violated constraint's name to tell a duplicate code from a duplicate NPWP.
@@ -148,23 +150,82 @@ pub struct CompanyHierarchyRow {
 impl CompanyRepository {
     /// Fetch a live (non-soft-deleted) company by id in the hierarchy read
     /// shape. `Ok(None)` = no such company (the hierarchy endpoint 404s).
-    /// Company-scoped via `fetch_optional_scoped` (ADR-0008), like the other
-    /// reads — under the company-scoped app role a foreign id yields `None`.
+    ///
+    /// A PLAIN read: the registry is unfenced by design — any caller that can name a company
+    /// may read its registry row; the scoped limbs of the hierarchy (branches, departments)
+    /// are the fenced reads (ADR-0029).
     pub async fn find_live_by_id(
         &self,
         pool: &PgPool,
         id: Uuid,
     ) -> Result<Option<CompanyHierarchyRow>, sqlx::Error> {
-        company_scope::fetch_optional_scoped(
-            pool,
-            sqlx::query_as::<_, CompanyHierarchyRow>(
-                "SELECT id, code, legal_name, trade_name, entity_type::text, base_currency, status::text \
-                 FROM organization.companies \
-                 WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
-            )
-            .bind(id),
+        sqlx::query_as::<_, CompanyHierarchyRow>(
+            "SELECT id, code, legal_name, trade_name, entity_type::text, base_currency, status::text \
+             FROM organization.companies \
+             WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
         )
+        .bind(id)
+        .fetch_optional(pool)
         .await
+    }
+}
+
+/// Hand-written org-units tree SQL. The tree is what places companies and branches; these
+/// helpers serve the write paths (branch creation validates the parent node; onboarding mints
+/// the root/company nodes). They live in this user-owned repository because the org-unit
+/// repository itself is generated. org_units is intentionally unfenced (ADR-0028: the tree is
+/// what scopes everything else), so every read here is a plain pool read.
+impl CompanyRepository {
+    /// The kind of an org-units node, as text. `Ok(None)` = no such node. Used by branch
+    /// creation to reject a parent that is not a company or branch node (the two kinds a
+    /// branch may attach under — departments are masters, not nodes).
+    pub async fn find_node_kind(
+        &self,
+        pool: &PgPool,
+        unit_id: Uuid,
+    ) -> Result<Option<String>, sqlx::Error> {
+        sqlx::query_scalar("SELECT kind::text FROM organization.org_units WHERE id=$1")
+            .bind(unit_id)
+            .fetch_optional(pool)
+            .await
+    }
+
+    /// The tenant root node (exactly one, guarded by a partial unique index).
+    /// `Ok(None)` = the tree is empty (a fresh database before the spine migration's
+    /// root insert, or a test that truncated the tree).
+    pub async fn find_root_unit(&self, pool: &PgPool) -> Result<Option<Uuid>, sqlx::Error> {
+        sqlx::query_scalar(
+            "SELECT id FROM organization.org_units WHERE kind='root' AND parent_id IS NULL LIMIT 1",
+        )
+        .fetch_optional(pool)
+        .await
+    }
+
+    /// Mint an org-units node on the CALLER'S transaction — the generic twin used by
+    /// onboarding for the root node (if absent) and each new company's node. The branch
+    /// twin (kind fixed 'branch') lives in [`BranchRepository::insert_branch_node_on`].
+    /// `kind` binds as `&str` and is cast at the DB (`$3::org_unit_kind`).
+    pub async fn insert_unit_node_on(
+        &self,
+        conn: &mut sqlx::PgConnection,
+        id: Uuid,
+        kind: &str,
+        parent_id: Option<Uuid>,
+        code: &str,
+        name: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"INSERT INTO organization.org_units (id, kind, parent_id, code, name)
+               VALUES ($1, $2::org_unit_kind, $3, $4, $5)"#,
+        )
+        .bind(id)
+        .bind(kind)
+        .bind(parent_id)
+        .bind(code)
+        .bind(name)
+        .execute(conn)
+        .await?;
+        Ok(())
     }
 }
 

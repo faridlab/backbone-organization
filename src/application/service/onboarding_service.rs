@@ -1,8 +1,10 @@
-//! Company onboarding — create a Company and its head-office Branch atomically.
+//! Company onboarding — create a Company, its org-units node, and its head-office Branch
+//! atomically.
 //!
 //! Hand-authored behavior (user-owned; see `metaphor.codegen.yaml`). Every company needs a
-//! default (head-office) branch; doing it in one transaction avoids a half-created company.
-//! Also validates the Indonesian NPWP format. Proven by `tests/onboarding_golden_cases.rs`.
+//! default (head-office) branch and its place in the org tree; doing it in one transaction
+//! avoids a half-created company. Also validates the Indonesian NPWP format. Proven by
+//! `tests/onboarding_golden_cases.rs`.
 
 use std::sync::Arc;
 
@@ -176,13 +178,30 @@ impl OnboardingService {
         }
         company_insert?;
 
-        // companies carries no company_id and is intentionally unfenced, but the head-office
-        // branch insert below is fenced (subtree of the session's bound company) — and
-        // onboarding has no ambient tenant, it *creates* one. Bind the freshly minted company
-        // onto the transaction so the branch insert passes the fence's WITH CHECK. Without
-        // this the flow only worked on connections that bypass row-level security (the table
-        // owner); any app-role connection failed the branch insert.
-        backbone_orm::company_scope::bind_company_on(&mut tx, company_id).await?;
+        // Tree placement (ADR-0028/0029): mint the company's node (id = company id, kind
+        // 'company') under the tenant root, then the head-office branch's node under the
+        // company node — the same transaction, so a company can never exist unplaced. The
+        // root exists by the spine migration; the ensure-below only covers a truncated tree
+        // (a test fixture) — concurrent minters collide on the partial unique index, loudly.
+        let root = match self.companies.find_root_unit(&self.db_pool).await? {
+            Some(r) => r,
+            None => {
+                let r = Uuid::new_v4();
+                self.companies
+                    .insert_unit_node_on(&mut tx, r, "root", None, "root", "Tenant root")
+                    .await?;
+                r
+            }
+        };
+        let display_name = req
+            .trade_name
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or(&req.legal_name);
+        self.companies
+            .insert_unit_node_on(&mut tx, company_id, "company", Some(root), &req.code, display_name)
+            .await?;
 
         let hq_branch_id = Uuid::new_v4();
         let branch_code = req.hq_branch_code.clone().unwrap_or_else(|| "HQ".to_string());
@@ -192,11 +211,13 @@ impl OnboardingService {
                 &mut tx,
                 &NewHeadOfficeBranchRow {
                     id: hq_branch_id,
-                    company_id,
                     code: &branch_code,
                     name: &branch_name,
                 },
             )
+            .await?;
+        self.branches
+            .insert_branch_node_on(&mut tx, hq_branch_id, company_id, &branch_code, &branch_name)
             .await?;
 
         tx.commit().await?;

@@ -4,6 +4,10 @@
 //! Hand-authored (user-owned; see `metaphor.codegen.yaml`). Orchestrates three
 //! repository reads and builds the department forest in memory. SQL lives in
 //! the repos (4-layer rule); this service only orchestrates and shapes.
+//!
+//! Isolation (ADR-0029): the company limb is a plain registry read (companies is unfenced by
+//! design); the scoped limbs are the branch subtree read and the branch-anchored department
+//! read — both ride the request-dedicated connection when the composing service bound a scope.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -60,8 +64,6 @@ pub struct BranchHierarchy {
 pub struct CompanyHierarchy {
     pub company: CompanyInfo,
     pub branches: Vec<BranchHierarchy>,
-    /// Company-level departments (`branch_id` is null).
-    pub departments: Vec<DepartmentNode>,
 }
 
 // ---------------------------------------------------------------------------
@@ -127,9 +129,9 @@ impl HierarchyService {
 
     /// Build the operational hierarchy for one company.
     ///
-    /// `NotFound` if the company doesn't exist (or isn't visible under the
-    /// request's company scope — `find_live_by_id` is company-scoped per
-    /// ADR-0008).
+    /// `NotFound` if the company doesn't exist. Branches come from the company's org-units
+    /// subtree; departments come anchored at exactly those branch ids — a department whose
+    /// `branch_id` is NULL or points outside the subtree simply does not appear (ADR-0029).
     pub async fn company_hierarchy(
         &self,
         company_id: Uuid,
@@ -142,16 +144,16 @@ impl HierarchyService {
 
         let branch_rows = self
             .branches
-            .list_live_by_company(&self.db_pool, company_id)
+            .list_live_by_unit(&self.db_pool, company_id)
             .await?;
+        let branch_ids: Vec<Uuid> = branch_rows.iter().map(|b| b.id).collect();
         let dept_rows = self
             .departments
-            .list_live_by_company(&self.db_pool, company_id)
+            .list_live_by_units(&self.db_pool, &branch_ids)
             .await?;
 
-        // Partition departments by branch (None → company-level) and build a
-        // parent_id forest within each partition.
-        let (company_depts, mut branch_depts) = partition_and_build(dept_rows);
+        // Group departments under their branch and build a `parent_id` forest per branch.
+        let mut branch_depts = partition_and_build(dept_rows);
 
         let mut branches = Vec::with_capacity(branch_rows.len());
         for b in branch_rows {
@@ -179,7 +181,6 @@ impl HierarchyService {
                 status: company.status,
             },
             branches,
-            departments: company_depts,
         })
     }
 }
@@ -188,26 +189,23 @@ impl HierarchyService {
 // Pure forest construction (unit-tested).
 // ---------------------------------------------------------------------------
 
-/// Partition departments by `branch_id` (None → company-level) and build a
-/// `parent_id` forest within each partition. Returns the company-level forest
-/// and a map of branch_id → that branch's department forest.
+/// Group departments by `branch_id` and build a `parent_id` forest within each group.
+/// Returns a map of branch_id → that branch's department forest. Rows with a NULL
+/// `branch_id` cannot be grouped under any branch and are dropped — the repository read
+/// that feeds this never returns them (branch-anchored read), so the drop is belt only.
 pub(crate) fn partition_and_build(
     rows: Vec<DepartmentHierarchyRow>,
-) -> (Vec<DepartmentNode>, HashMap<Uuid, Vec<DepartmentNode>>) {
-    let mut company: Vec<DepartmentHierarchyRow> = Vec::new();
+) -> HashMap<Uuid, Vec<DepartmentNode>> {
     let mut by_branch: HashMap<Uuid, Vec<DepartmentHierarchyRow>> = HashMap::new();
     for r in rows {
-        match r.branch_id {
-            Some(bid) => by_branch.entry(bid).or_default().push(r),
-            None => company.push(r),
+        if let Some(bid) = r.branch_id {
+            by_branch.entry(bid).or_default().push(r);
         }
     }
-    let company_forest = build_forest(company);
-    let branch_forests = by_branch
+    by_branch
         .into_iter()
         .map(|(bid, rs)| (bid, build_forest(rs)))
-        .collect();
-    (company_forest, branch_forests)
+        .collect()
 }
 
 /// Build a `parent_id` forest from rows ordered parents-first (level, then
@@ -274,18 +272,20 @@ mod tests {
     }
 
     #[test]
-    fn builds_two_level_tree_under_company() {
-        // a (root) → b → c ; plus a standalone root d. All company-level (no branch).
+    fn builds_two_level_tree_under_branch() {
+        // a (root) → b → c ; plus a standalone root d. All anchored at the same branch.
+        let br = "11111111-1111-1111-1111-111111111111";
         let rows = vec![
-            dept("00000000-0000-0000-0000-000000000001", "a", None, None, 0),
-            dept("00000000-0000-0000-0000-000000000002", "b", Some("00000000-0000-0000-0000-000000000001"), None, 1),
-            dept("00000000-0000-0000-0000-000000000003", "c", Some("00000000-0000-0000-0000-000000000002"), None, 2),
-            dept("00000000-0000-0000-0000-000000000004", "d", None, None, 0),
+            dept("00000000-0000-0000-0000-000000000001", "a", None, Some(br), 0),
+            dept("00000000-0000-0000-0000-000000000002", "b", Some("00000000-0000-0000-0000-000000000001"), Some(br), 1),
+            dept("00000000-0000-0000-0000-000000000003", "c", Some("00000000-0000-0000-0000-000000000002"), Some(br), 2),
+            dept("00000000-0000-0000-0000-000000000004", "d", None, Some(br), 0),
         ];
-        let (company, by_branch) = partition_and_build(rows);
-        assert!(by_branch.is_empty());
-        assert_eq!(company.len(), 2, "two roots (a, d)");
-        let a = company.iter().find(|n| n.code == "a").unwrap();
+        let by_branch = partition_and_build(rows);
+        assert_eq!(by_branch.len(), 1, "one branch group");
+        let forest = by_branch.get(&Uuid::parse_str(br).unwrap()).unwrap();
+        assert_eq!(forest.len(), 2, "two roots (a, d)");
+        let a = forest.iter().find(|n| n.code == "a").unwrap();
         assert_eq!(a.children.len(), 1);
         assert_eq!(a.children[0].code, "b");
         assert_eq!(a.children[0].children.len(), 1);
@@ -300,12 +300,8 @@ mod tests {
             dept("00000000-0000-0000-0000-000000000001", "hq-root", None, Some(hq), 0),
             dept("00000000-0000-0000-0000-000000000002", "hq-child", Some("00000000-0000-0000-0000-000000000001"), Some(hq), 1),
             dept("00000000-0000-0000-0000-000000000003", "br-root", None, Some(br), 0),
-            dept("00000000-0000-0000-0000-000000000004", "co-root", None, None, 0),
         ];
-        let (company, by_branch) = partition_and_build(rows);
-        // Company-level: one root.
-        assert_eq!(company.len(), 1);
-        assert_eq!(company[0].code, "co-root");
+        let by_branch = partition_and_build(rows);
         // HQ branch forest: hq-root → hq-child.
         let hq_forest = by_branch.get(&Uuid::parse_str(hq).unwrap()).unwrap();
         assert_eq!(hq_forest.len(), 1);
@@ -321,22 +317,32 @@ mod tests {
     #[test]
     fn dangling_parent_becomes_root() {
         // parent points to a node not in the set → treated as a root, not dropped.
+        let br = "11111111-1111-1111-1111-111111111111";
         let rows = vec![dept(
             "00000000-0000-0000-0000-000000000009",
             "orphan",
             Some("ffffffff-ffff-ffff-ffff-ffffffffffff"),
-            None,
+            Some(br),
             1,
         )];
-        let (company, _) = partition_and_build(rows);
-        assert_eq!(company.len(), 1);
-        assert_eq!(company[0].code, "orphan");
+        let by_branch = partition_and_build(rows);
+        let forest = by_branch.get(&Uuid::parse_str(br).unwrap()).unwrap();
+        assert_eq!(forest.len(), 1);
+        assert_eq!(forest[0].code, "orphan");
+    }
+
+    #[test]
+    fn branchless_rows_are_dropped() {
+        // A NULL branch_id cannot be grouped under any branch — the read never returns
+        // such rows; the drop here is belt only.
+        let rows = vec![dept("00000000-0000-0000-0000-000000000004", "co-root", None, None, 0)];
+        let by_branch = partition_and_build(rows);
+        assert!(by_branch.is_empty());
     }
 
     #[test]
     fn empty_input_yields_empty_forests() {
-        let (company, by_branch) = partition_and_build(vec![]);
-        assert!(company.is_empty());
+        let by_branch = partition_and_build(vec![]);
         assert!(by_branch.is_empty());
     }
 }

@@ -1,7 +1,8 @@
 //! Onboarding REST handler — hand-authored (user-owned; never regenerated).
 //!
 //! Exposes the one non-CRUD endpoint this module owns:
-//!   POST /companies/onboard  → create a Company + its head-office Branch atomically.
+//!   POST /companies/onboard  → create a Company, its org-units node, and its head-office
+//!   Branch + node, atomically.
 //! Everything else is the generated 12-endpoint CRUD per entity.
 
 use std::sync::Arc;

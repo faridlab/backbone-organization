@@ -1,8 +1,9 @@
 //! Golden-case tests for company onboarding.
 //!
 //! Proves the one hand-authored behavior this module owns:
-//!   onboard() creates a Company AND its head-office Branch in a single transaction,
-//!   validates NPWP, and rejects duplicate company codes (including concurrently).
+//!   onboard() creates a Company, its org-units node, AND its head-office Branch + node in a
+//!   single transaction, validates NPWP, and rejects duplicate company codes (including
+//!   concurrently).
 //! Requires DATABASE_URL (defaults to local dev Postgres on :5433).
 
 use sqlx::{PgPool, Row};
@@ -61,10 +62,11 @@ async fn onboard_creates_company_and_head_office_branch() {
     assert_eq!(company.get::<String, _>("et"), "pt");
     assert_eq!(company.get::<String, _>("st"), "active");
 
-    // Exactly one branch, and it is the head office.
+    // Exactly one branch in the company's org-units subtree, and it is the head office.
     let branches = sqlx::query(
         "SELECT id, is_head_office, branch_type::text AS bt, code, name \
-         FROM organization.branches WHERE company_id = $1",
+         FROM organization.branches \
+         WHERE id IN (SELECT organization.org_unit_subtree(ARRAY[$1]))",
     )
     .bind(result.company_id)
     .fetch_all(&pool)
@@ -79,6 +81,34 @@ async fn onboard_creates_company_and_head_office_branch() {
         result.hq_branch_id,
         "returned hq_branch_id must match the created branch"
     );
+
+    // Tree placement (ADR-0028): the company's node (id = company id, kind 'company') sits
+    // under the tenant root, and the head-office branch's node sits under the company node.
+    let (node_kind, node_parent): (String, Uuid) = sqlx::query_as(
+        "SELECT kind::text, parent_id FROM organization.org_units WHERE id = $1",
+    )
+    .bind(result.company_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(node_kind, "company");
+    let root: Uuid = sqlx::query_scalar(
+        "SELECT id FROM organization.org_units WHERE kind = 'root' LIMIT 1",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(node_parent, root, "company node attaches under the tenant root");
+
+    let (hq_kind, hq_parent): (String, Uuid) = sqlx::query_as(
+        "SELECT kind::text, parent_id FROM organization.org_units WHERE id = $1",
+    )
+    .bind(result.hq_branch_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(hq_kind, "branch");
+    assert_eq!(hq_parent, result.company_id, "HQ branch node attaches under the company node");
 }
 
 // ── Golden case 2: invalid NPWP is rejected before any write ──

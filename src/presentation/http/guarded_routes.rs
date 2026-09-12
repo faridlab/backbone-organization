@@ -3,22 +3,25 @@
 //! Hand-authored (user-owned; see `metaphor.codegen.yaml`). Closes the CRUD-bypass the council
 //! flagged: the generated `routes()` exposes full mutable CRUD (POST/PATCH/upsert/bulk) on every
 //! entity, backed by generic services with NO domain validation. That lets a caller create a
-//! branchless company, a company/branch with a malformed NPWP, or a department whose parent/branch
-//! belongs to another company — corrupting the org dimension every downstream module trusts.
+//! malformed NPWP, or a department whose parent/branch points at nothing — corrupting the org
+//! dimension every downstream module trusts.
 //!
 //! Guarded surface:
 //!   - **Company**: READ-ONLY over generic CRUD. The only writer is `OnboardingService`
-//!     (`POST /companies/onboard`) — a company is always born with a head-office branch.
+//!     (`POST /companies/onboard`) — a company is always born with its org-units node and a
+//!     head-office branch.
 //!   - **Branch / Department**: READ + **validated create** and **validated re-point** via
-//!     `OrgWriteService` (NPWP format, company existence, same-company parent/branch, no cycle).
+//!     `OrgWriteService` (NPWP format, node-kind/visibility checks, no self-parent).
 //!     Generic update/delete/upsert/bulk are intentionally NOT mounted here.
 //!
 //! Every write above is additionally **tenant-guarded**: `company_auth` proves the caller's tenant
-//! from a signed Bearer token and the handlers stamp `company_id` from that token, never from the
-//! request body — a client must not be able to name the company it writes into.
+//! from a signed Bearer token, and a new branch attaches under the caller's company node — derived
+//! from that token, never from the request body. A department's links are validated by VISIBILITY
+//! (a link outside the caller's subtree reads as absent, ADR-0029), so no tenant axis crosses the
+//! wire at all.
 //!
 //! `POST /companies/onboard` is deliberately NOT behind the tenant guard: it *creates* the tenant,
-//! so there is no pre-existing `company_id` a token could carry. It is an unauthenticated-by-design
+//! so there is no pre-existing node a token could carry. It is an unauthenticated-by-design
 //! signup seam whose access control belongs to the composing service, not to this guard.
 
 use std::sync::Arc;
@@ -59,8 +62,8 @@ fn err_response(e: OrgWriteError) -> axum::response::Response {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CreateBranchBody {
-    // No `company_id`: the tenant is derived from the signed token via `CompanyContext`, never from
-    // the request body — a client must not be able to name the company it creates a branch in.
+    // No parent field: the attach point is the caller's company node, derived from the signed
+    // token via `CompanyContext` — never from the request body.
     code: String,
     name: String,
     #[serde(default)]
@@ -87,9 +90,12 @@ async fn create_branch(
     tenant: CompanyContext,
     Json(b): Json<CreateBranchBody>,
 ) -> axum::response::Response {
+    // The attach point is the caller's company NODE (id = the token's company claim; the spine
+    // preserves company ids as node ids, so the claim names a valid node). Never from the body —
+    // a client must not be able to place its branch under someone else's subtree.
     match svc
         .create_branch(NewBranch {
-            company_id: tenant.company_id,
+            parent_unit: tenant.company_id,
             code: b.code,
             name: b.name,
             branch_type: b.branch_type,
@@ -110,14 +116,14 @@ async fn create_branch(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CreateDepartmentBody {
-    // No `company_id`: the tenant comes from the signed token (`CompanyContext`), not the body.
+    // No tenant field at all: a department carries no tenant axis (ADR-0029). Its links are
+    // validated by visibility — a parent or branch outside the caller's subtree reads as absent.
     code: String,
     name: String,
     #[serde(default)]
     parent_id: Option<Uuid>,
-    // `branch_id` stays in the body: unlike the tenant, it is a *domain choice* (which of the
-    // tenant's branches this department sits under), and `OrgWriteService` already validates that it
-    // belongs to `company_id` — i.e. to the token's tenant.
+    // `branch_id` stays in the body: it is a *domain choice* (which visible branch this
+    // department sits under), and `OrgWriteService` validates it by visibility.
     #[serde(default)]
     branch_id: Option<Uuid>,
     #[serde(default)]
@@ -128,12 +134,13 @@ struct CreateDepartmentBody {
 
 async fn create_department(
     State(svc): State<Arc<OrgWriteService>>,
-    tenant: CompanyContext,
     Json(d): Json<CreateDepartmentBody>,
 ) -> axum::response::Response {
+    // No tenant extractor and no tenant axis anywhere: `OrgWriteService` validates the links by
+    // VISIBILITY (a link outside the caller's subtree reads as absent, ADR-0029), and the route
+    // stays behind `company_auth` so the request scope the decorator needs is always bound.
     match svc
         .create_department(NewDepartment {
-            company_id: tenant.company_id,
             code: d.code,
             name: d.name,
             parent_id: d.parent_id,
@@ -187,29 +194,23 @@ fn create_org_write_routes(svc: Arc<OrgWriteService>, verifier: CompanyVerifier)
 /// Tenant-existence guard: reject (401) when the caller's proven `company_id` is not a real
 /// `organization.companies` row.
 ///
-/// RLS already fences a non-existent company to empty reads (no cross-tenant leak) — this guard
-/// adds an explicit 401 so the caller learns *why* (unknown tenant) instead of seeing empty data,
-/// and so a write surface can fail fast before any handler runs.
+/// companies is the unfenced registry (ADR-0029), so this is a PLAIN registry read — the
+/// explicit 401 it produces is the only "unknown tenant" signal on this seam: without it the
+/// caller would sail past into empty scoped reads with no explanation. It also lets a write
+/// surface fail fast before any handler runs.
 ///
 /// **Must be mounted INNER to [`company_auth`]** (i.e. `company_auth` is the outer layer, applied
 /// last via `.route_layer`): [`company_auth`] is what inserts the [`CompanyContext`] this reads and
-/// — when the app supplies its pool — what binds the request company scope via
-/// [`backbone_orm::company_scope::with_request_scope`]. The existence query uses
-/// [`backbone_orm::company_scope::fetch_optional_scalar_scoped`], which prefers the request's
-/// scoped connection; under that scope `EXISTS(... id = $1)` is RLS-fenced to the caller's own
-/// company, so it resolves to `true` iff that company row exists. Outside the request scope (no
-/// pool / pre-scope) it fails closed.
+/// — when the app supplies its pool — what binds the request scope the module's reads prefer.
 pub async fn require_known_company(State(pool): State<PgPool>, req: Request, next: Next) -> Response {
     let Some(ctx) = req.extensions().get::<CompanyContext>().cloned() else {
         return unknown_company("no company principal — mount inner to company_auth");
     };
-    let exists = backbone_orm::company_scope::fetch_optional_scalar_scoped(
-        &pool,
-        sqlx::query_scalar::<_, bool>(
-            "SELECT EXISTS(SELECT 1 FROM organization.companies WHERE id = $1)",
-        )
-        .bind(ctx.company_id),
+    let exists: Result<Option<bool>, sqlx::Error> = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM organization.companies WHERE id = $1)",
     )
+    .bind(ctx.company_id)
+    .fetch_optional(&pool)
     .await;
     match exists {
         Ok(Some(true)) => next.run(req).await,
@@ -229,9 +230,10 @@ fn unknown_company(message: &str) -> Response {
 /// **Prefer this over `OrganizationModule::routes()` / `create_organization_routes` for any real
 /// deployment** — the latter expose unvalidated generic CRUD.
 ///
-/// The composing service builds one [`CompanyVerifier`] from its JWT secret and passes it here; the
-/// branch/department write surface derives `company_id` from the token, so no tenant crosses the
-/// wire in a body. `POST /companies/onboard` is exempt — it creates the tenant itself.
+/// The composing service builds one [`CompanyVerifier`] from its JWT secret and passes it here; a
+/// branch write derives its attach point (the caller's company node) from the token, and
+/// department writes carry no tenant axis at all — no tenant crosses the wire in a body.
+/// `POST /companies/onboard` is exempt — it creates the tenant itself.
 pub fn create_guarded_organization_routes(
     m: &OrganizationModule,
     verifier: CompanyVerifier,
@@ -251,8 +253,8 @@ pub fn create_guarded_organization_routes(
 /// `company_id` to resolve to a real `organization.companies` row (else 401).
 ///
 /// The existence check runs inner to `company_auth` on the validated write surface, so it sees the
-/// request company scope `company_auth` binds. RLS already fences an unknown company to empty
-/// reads — this adds an explicit, fail-fast 401. Pass the same pool the app registers as a
+/// `CompanyContext` `company_auth` inserts. companies is the unfenced registry, so this plain read
+/// is the fail-fast "unknown tenant" signal. Pass the same pool the app registers as a
 /// `PgPool` extension (the one `company_auth` upgrades to a request-dedicated scope).
 pub fn create_guarded_organization_routes_checked(
     m: &OrganizationModule,

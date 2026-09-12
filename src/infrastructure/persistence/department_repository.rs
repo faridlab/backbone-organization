@@ -6,12 +6,21 @@
 //!
 //! Thin newtype over `backbone_orm::GenericCrudRepository<Department, backbone_orm::SoftDelete>`.
 //! All standard CRUD methods are available via `Deref`.
+//!
+//! RLS LAW (ADR-0029): the module is tenant-agnostic and ships no row fence. Department rows carry
+//! no company column — a department's placement is its optional `branch_id` (a branch IS an
+//! org-units node), so a department anchored at a branch inherits that branch's place in the tree.
+//! Isolation is installed by the COMPOSING service's tenancy decorator.
 
 use anyhow::Result;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use backbone_orm::company_scope;
+// The typed multi-row read twin lives only in the legacy `company_scope` module. Its
+// connection discipline is what this repository needs — request-dedicated connection when the
+// composing service bound one, plain pool otherwise. The helper's legacy task-local branch is
+// never taken: this module sets no legacy scope of its own (ADR-0029).
+use backbone_orm::company_scope::fetch_all_scoped;
 
 use crate::domain::entity::Department;
 
@@ -41,10 +50,11 @@ impl DepartmentRepository {
 /// The exact row a validated department creation writes.
 ///
 /// Mirrors the raw column shape rather than the `Department` entity. `parent_id`/`branch_id` are
-/// expected already link-validated (exist AND same company) by the caller.
+/// expected already link-validated by the caller — existence-only: a link outside the caller's
+/// visible scope is simply absent (the composing service's decorator fences the probe,
+/// ADR-0029), so a cross-scope link fails closed without a same-company comparison.
 pub struct NewDepartmentRow<'a> {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub code: &'a str,
     pub name: &'a str,
     pub parent_id: Option<Uuid>,
@@ -56,83 +66,72 @@ pub struct NewDepartmentRow<'a> {
 /// Hand-written Department SQL. Lives here (not in the write service) per the module's 4-layer rule:
 /// services orchestrate, repositories hold the SQL.
 impl DepartmentRepository {
-    /// Create a department.
-    ///
-    /// RLS scope (ADR-0008), DTO-company pattern: the caller wraps this in
-    /// `with_company_scope(Some(company_id))` so the INSERT's WITH CHECK passes under the app role.
-    pub async fn insert_department(
+    /// Create a department on the CALLER'S transaction — it commits (or rolls back) as one unit
+    /// with the caller's unit of work.
+    pub async fn insert_department_on(
         &self,
-        pool: &PgPool,
+        conn: &mut sqlx::PgConnection,
         d: &NewDepartmentRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        company_scope::execute_scoped(
-            pool,
-            sqlx::query(
-                r#"INSERT INTO organization.departments
-                    (id, company_id, code, name, parent_id, branch_id, is_group, manager_id, status)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'active'::org_status)"#,
-            )
-            .bind(d.id)
-            .bind(d.company_id)
-            .bind(d.code)
-            .bind(d.name)
-            .bind(d.parent_id)
-            .bind(d.branch_id)
-            .bind(d.is_group)
-            .bind(d.manager_id),
+        sqlx::query(
+            r#"INSERT INTO organization.departments
+                (id, code, name, parent_id, branch_id, is_group, manager_id, status)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,'active'::org_status)"#,
         )
+        .bind(d.id)
+        .bind(d.code)
+        .bind(d.name)
+        .bind(d.parent_id)
+        .bind(d.branch_id)
+        .bind(d.is_group)
+        .bind(d.manager_id)
+        .execute(conn)
         .await?;
         Ok(())
     }
 
-    /// The company a department belongs to. `Ok(None)` = no such live department.
-    ///
-    /// Two callers with two scoping patterns, both supplied by the caller:
-    /// - the parent link probe wraps it in `with_company_scope(Some(company_id))` (param-company) and
-    ///   keeps its explicit `c != company_id` check as defense-in-depth;
-    /// - the repoint owner lookup calls it ID-ONLY — no company argument — so it rides the
-    ///   REQUEST-dedicated connection (established by `company_auth`) whose `app.company_id` fences it,
-    ///   and another company's department simply is not found.
-    pub async fn find_owner_company(
+    /// Whether a live (non-soft-deleted) department exists — the parent-link probe. A department
+    /// outside the caller's visible scope is simply absent (the composing service's decorator
+    /// fences the read, ADR-0029).
+    pub async fn exists_live(
         &self,
         pool: &PgPool,
         department_id: Uuid,
-    ) -> Result<Option<Uuid>, sqlx::Error> {
-        company_scope::fetch_optional_scalar_scoped(
+    ) -> Result<bool, sqlx::Error> {
+        let row = backbone_orm::org_scope::fetch_optional_row_scoped(
             pool,
-            sqlx::query_scalar(
-                "SELECT company_id FROM organization.departments WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
+            sqlx::query(
+                "SELECT id FROM organization.departments WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
             )
             .bind(department_id),
         )
-        .await
+        .await?;
+        Ok(row.is_some())
     }
 
-    /// Re-point a department's invariant-bearing links. The caller has validated them (exist,
-    /// same-company, no self-parent) and fences this update to the owning company it read
-    /// (`with_company_scope(Some(company_id))`).
-    pub async fn repoint(
+    /// Re-point a department's invariant-bearing links on the CALLER'S transaction. The caller
+    /// has validated the links (exist, no self-parent); isolation of the UPDATE itself is the
+    /// composing service's decorator (ADR-0029).
+    pub async fn repoint_on(
         &self,
-        pool: &PgPool,
+        conn: &mut sqlx::PgConnection,
         id: Uuid,
         parent_id: Option<Uuid>,
         branch_id: Option<Uuid>,
     ) -> Result<(), sqlx::Error> {
-        company_scope::execute_scoped(
-            pool,
-            sqlx::query("UPDATE organization.departments SET parent_id=$2, branch_id=$3 WHERE id=$1")
-                .bind(id)
-                .bind(parent_id)
-                .bind(branch_id),
-        )
-        .await?;
+        sqlx::query("UPDATE organization.departments SET parent_id=$2, branch_id=$3 WHERE id=$1")
+            .bind(id)
+            .bind(parent_id)
+            .bind(branch_id)
+            .execute(conn)
+            .await?;
         Ok(())
     }
 }
 
 /// Lightweight read shape for the department level of the hierarchy endpoint.
 /// `status` cast to `::text` so this binds as `String`. Carries `parent_id`
-/// (tree) and `branch_id` (partition) so the service can build the forest and
+/// (tree) and `branch_id` (placement) so the service can build the forest and
 /// group departments under their branch.
 #[derive(Debug, sqlx::FromRow, Clone)]
 pub struct DepartmentHierarchyRow {
@@ -148,23 +147,28 @@ pub struct DepartmentHierarchyRow {
 
 /// Hand-written Department SQL for the hierarchy read.
 impl DepartmentRepository {
-    /// All live (non-soft-deleted) departments of `company_id`, in tree order
+    /// All live (non-soft-deleted) departments anchored at any of `branch_units`, in tree order
     /// (level, then sort_order, then code) so parents precede children.
-    /// Company-scoped via `fetch_all_scoped` (ADR-0008).
-    pub async fn list_live_by_company(
+    ///
+    /// Branch membership is the ONLY placement a department has: a department whose `branch_id`
+    /// is NULL (the column stays optional) simply does not appear until a branch is assigned.
+    /// The caller passes exactly the branch ids it read from its subtree, so a department
+    /// attached to a branch outside that subtree is invisible here — fail-closed without a
+    /// company comparison (ADR-0029).
+    pub async fn list_live_by_units(
         &self,
         pool: &PgPool,
-        company_id: Uuid,
+        branch_units: &[Uuid],
     ) -> Result<Vec<DepartmentHierarchyRow>, sqlx::Error> {
-        company_scope::fetch_all_scoped(
+        fetch_all_scoped(
             pool,
             sqlx::query_as::<_, DepartmentHierarchyRow>(
                 "SELECT id, code, name, parent_id, branch_id, level, is_group, status::text \
                  FROM organization.departments \
-                 WHERE company_id=$1 AND (metadata->>'deleted_at') IS NULL \
+                 WHERE branch_id = ANY($1) AND (metadata->>'deleted_at') IS NULL \
                  ORDER BY level, sort_order, code",
             )
-            .bind(company_id),
+            .bind(branch_units),
         )
         .await
     }
