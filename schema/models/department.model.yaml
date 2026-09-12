@@ -16,15 +16,10 @@ models:
         attributes: ["@id", "@default(uuid)"]
         description: "Unique department identifier"
 
-      company_id:
-        type: uuid
-        attributes: ["@required", "@foreign_key(Company.id)"]
-        description: "Owning company"
-
       code:
         type: string
         attributes: ["@required", "@max(30)"]
-        description: "Short code, unique within the company"
+        description: "Short code, unique within the owning unit"
 
       name:
         type: string
@@ -74,12 +69,6 @@ models:
         description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
 
     relations:
-      company:
-        type: Company
-        attributes: ["@one", "@foreign_key(company_id)"]
-        description: "Owning company"
-        inverse: departments
-
       parent:
         type: Department?
         attributes: ["@one", "@foreign_key(parent_id)"]
@@ -98,11 +87,6 @@ models:
         description: "Branch location"
         inverse: departments
 
-    indexes:
-      - type: unique
-        fields: [company_id, code]
-        where: "deleted_at IS NULL"
-      - type: index
-        fields: [company_id, parent_id, sort_order]
-      - type: index
-        fields: [company_id, status]
+    # Tenancy (ADR-0029): the module is tenant-agnostic — no tenant key, no per-unit unique.
+    # Per-unit code/status lookups are posture — the composing service's tenancy decorator
+    # re-declares them org-scoped. The parent/children hierarchy above is DOMAIN, not posture.

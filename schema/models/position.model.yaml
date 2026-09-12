@@ -16,11 +16,6 @@ models:
         attributes: ["@id", "@default(uuid)"]
         description: "Unique position identifier"
 
-      company_id:
-        type: uuid
-        attributes: ["@required", "@foreign_key(Company.id)"]
-        description: "Owning company"
-
       name:
         type: string
         attributes: ["@required", "@max(150)"]
@@ -29,7 +24,7 @@ models:
       code:
         type: string?
         attributes: ["@max(30)"]
-        description: "Short code, unique within the company when provided"
+        description: "Short code, unique within the owning unit when provided"
 
       description:
         type: string?
@@ -41,19 +36,6 @@ models:
         attributes: ["@audit_metadata"]
         description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
 
-    relations:
-      company:
-        type: Company
-        attributes: ["@one", "@foreign_key(company_id)"]
-        description: "Owning company"
-        inverse: positions
-
-    indexes:
-      # code is optional — only enforce uniqueness where a code is actually set.
-      - type: unique
-        fields: [company_id, code]
-        where: "code IS NOT NULL AND deleted_at IS NULL"
-      - type: index
-        fields: [company_id, name]
-      - type: index
-        fields: [company_id]
+    # Tenancy (ADR-0029): the module is tenant-agnostic — no tenant key, no per-unit unique.
+    # Positions are unit-local masters; per-unit code/name lookups are posture — the composing
+    # service's tenancy decorator re-declares them org-scoped.

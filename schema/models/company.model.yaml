@@ -1,15 +1,18 @@
 # =============================================================================
 # Domain: Organization
 # Entity: Company
-# Description: Legal entity / books owner. Referenced by every module's `company_id`.
+# Description: Legal entity / books owner; a company-kind node in organization.org_units.
 #
 # TENANT ISOLATION BOUNDARY — SETTLED (see ADR-001 §3 and ADR-003):
 #   - The tenant fence is schema-per-tenant at the DB layer, enforced by RLS at the app
 #     role. There is NO tenant_id/provider_id column in this module.
 #   - `company_id` is NOT a tenant. It partitions the BOOKS — which legal entity owns a
-#     document. `parent_company_id` + `subsidiaries` + `is_default` below mean a principal
-#     crosses this boundary routinely and legitimately (consolidated reporting, intercompany
-#     postings), which is the opposite of how an isolation fence behaves.
+#     document. The group/consolidation tree lives in organization.org_units
+#     (org_units.parent_id — a company's node id IS the company id; the legacy
+#     parent_company_id column is gone, a view over org_units exposes parent/subsidiary
+#     pairs), and `is_default` below means a principal crosses this boundary routinely and
+#     legitimately (consolidated reporting, intercompany postings), which is the opposite
+#     of how an isolation fence behaves.
 #   - The sapiens tenant-entity candidates (OrganizationUser/OrganizationRole/
 #     OrganizationPermission) are an auth/RBAC concern owned by sapiens, not modeled here.
 # Do not re-litigate either boundary in this file; supersede the ADRs instead.
@@ -18,7 +21,7 @@
 models:
   - name: Company
     collection: companies
-    description: "Legal entity that owns the books (referenced as company_id across the ERP)"
+    description: "Legal entity that owns the books (a company-kind node in organization.org_units)"
 
     fields:
       id:
@@ -105,12 +108,6 @@ models:
         attributes: ["@default('ID')", "@length(2)"]
         description: "ISO 3166-1 alpha-2 country code"
 
-      # Group / consolidation (optional self-reference)
-      parent_company_id:
-        type: uuid?
-        attributes: ["@foreign_key(Company.id)"]
-        description: "Parent company for group/consolidation"
-
       is_default:
         type: bool
         attributes: ["@default(false)"]
@@ -131,59 +128,12 @@ models:
         attributes: ["@audit_metadata"]
         description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
 
-    relations:
-      parent:
-        type: Company?
-        attributes: ["@one", "@foreign_key(parent_company_id)"]
-        description: "Parent company"
-        inverse: subsidiaries
-
-      subsidiaries:
-        type: Company[]
-        attributes: ["@one_to_many"]
-        description: "Subsidiary companies"
-        inverse: parent
-
-      branches:
-        type: Branch[]
-        attributes: ["@one_to_many"]
-        description: "Branches of this company"
-        inverse: company
-
-      departments:
-        type: Department[]
-        attributes: ["@one_to_many"]
-        description: "Departments of this company"
-        inverse: company
-
-      # M:N classification via the CompanyIndustry junction (no @many_to_many in the DSL).
-      # Descriptive only — NOT part of the books-owner contract (ADR-003 §2).
-      company_industries:
-        type: CompanyIndustry[]
-        attributes: ["@one_to_many"]
-        description: "KBLI 2020 industry classifications (multiple; one may be primary)"
-        inverse: company
-
-      # Reference masters (Phase 0 / org-readiness) — consumed as logical FKs by
-      # backbone-employee.employments and backbone-schedule.schedule_organizations.
-      positions:
-        type: Position[]
-        attributes: ["@one_to_many"]
-        description: "Job positions / titles defined for this company"
-        inverse: company
-
-      levels:
-        type: Level[]
-        attributes: ["@one_to_many"]
-        description: "Job levels / grades defined for this company"
-        inverse: company
-
-      structures:
-        type: Structure[]
-        attributes: ["@one_to_many"]
-        description: "Org structural units defined for this company"
-        inverse: company
-
+    # Tenancy (ADR-0029): the companies registry carries no tenant axis BY DESIGN — it IS the
+    # registry of legal entities. The group tree lives in organization.org_units
+    # (org_units.parent_id; the company_subsidiaries view exposes the parent/subsidiary
+    # pairs), and every per-unit master that used to hang off a company relation
+    # (branches, departments, positions, levels, structures, the KBLI classification) is
+    # scoping posture owned by the composing service's tenancy decorator.
     indexes:
       - type: unique
         fields: [code]
@@ -193,8 +143,6 @@ models:
         where: "npwp IS NOT NULL AND deleted_at IS NULL"
       - type: index
         fields: [status]
-      - type: index
-        fields: [parent_company_id]
 
 # =============================================================================
 # Enums

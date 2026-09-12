@@ -21,11 +21,6 @@ models:
         attributes: ["@id", "@default(uuid)"]
         description: "Unique structure identifier"
 
-      company_id:
-        type: uuid
-        attributes: ["@required", "@foreign_key(Company.id)"]
-        description: "Owning company"
-
       name:
         type: string
         attributes: ["@required", "@max(150)"]
@@ -48,12 +43,6 @@ models:
         description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
 
     relations:
-      company:
-        type: Company
-        attributes: ["@one", "@foreign_key(company_id)"]
-        description: "Owning company"
-        inverse: structures
-
       parent:
         type: Structure?
         attributes: ["@one", "@foreign_key(parent_id)"]
@@ -66,10 +55,9 @@ models:
         description: "Child structural units"
         inverse: parent
 
+    # Tenancy (ADR-0029): the module is tenant-agnostic — no tenant key, no per-unit unique.
+    # The parent/children hierarchy above and the parent_id lookup below are DOMAIN, not
+    # posture; per-unit name uniqueness is decorator-owned org-scoped.
     indexes:
-      - type: index
-        fields: [company_id, parent_id]
-      - type: index
-        fields: [company_id, name]
       - type: index
         fields: [parent_id]

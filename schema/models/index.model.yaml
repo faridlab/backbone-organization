@@ -3,22 +3,23 @@
 # =============================================================================
 # Version: 2.0
 # Description: Foundation org structure — Company (books owner), Branch, Department.
-# The entities every other pillar references (accounting.company_id/branch_id/department_id
-# are logical FKs to organization.Company/Branch/Department).
+# The entities every other pillar references (accounting/branch_id/department_id
+# are logical FKs to organization.Branch/Department; the org tree itself is
+# organization.org_units).
 # =============================================================================
 
 module: organization
 version: 2
 schema: organization
-# ADR-0014 fence posture: shared_tree — a session rooted at a company sees this
-# module's rows for the company's whole SUBTREE (via organization.company_subtree()
-# over companies(parent_company_id)), not just its own company_id. Chosen over
-# strict because the org tree is inherently hierarchical: multi-company groups
-# are the norm, and a parent company's admins manage descendants' branches/
-# departments/structures (recurring-themes C2/C3). companies and industries
-# carry no company_id — they ARE the tree / a public classification (Odoo base
-# posture) — and stay intentionally unfenced under any declaration.
-company_fence: shared_tree
+# Tenancy: none, by design (ADR-0029). The module is tenant-agnostic — it ships no
+# scoping column and no fence declaration; the module-native shared-tree fence and
+# its company_subtree() helper are retired by the strip migration. A composing
+# backend-service that wants the per-unit masters (branches, departments, levels,
+# positions, structures, the KBLI classification) org-scoped declares them in its
+# tenancy.yaml; the decorator installs org_unit_id, the RLS policy, the kind guard,
+# and per-unit uniques at composition time. companies, industries and org_units
+# carry no tenant axis at all — they ARE the registry / a public classification /
+# the scoping tree — and stay intentionally unfenced under any declaration.
 description: "Foundation org structure: Company (books owner), Branch, Department (Indonesia-first)"
 
 config:

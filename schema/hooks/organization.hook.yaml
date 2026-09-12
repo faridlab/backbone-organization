@@ -57,9 +57,9 @@ rules:
     assert: "npwp present => digits(npwp) in {15, 16}"
     error_code: invalid_npwp
   - id: R2
-    name: company_born_with_head_office
+    name: company_born_placed_with_head_office
     when: onboarding
-    assert: "a head-office Branch is created in the same transaction"
+    assert: "a Company, its org_units node, and a head-office Branch + node are created in the same transaction"
     error_code: none
   - id: R3
     name: unique_company_code
@@ -72,20 +72,20 @@ rules:
     assert: "npwp unique among non-deleted companies when present"
     error_code: duplicate_npwp
   - id: R5
-    name: branch_company_exists
+    name: branch_parent_unit_kind
     when: writing
-    assert: "company_id references an existing non-deleted Company"
-    error_code: company_not_found
+    assert: "parent_unit references an existing org_units node of kind company or branch"
+    error_code: parent_unit_not_found
   - id: R6
-    name: department_parent_same_company
+    name: department_parent_visible
     when: writing
-    assert: "parent_id present => parent exists AND parent.company_id == company_id"
-    error_code: parent_different_company
+    assert: "parent_id present => parent exists and is visible to the caller (a link outside the caller's subtree reads as absent)"
+    error_code: parent_not_found
   - id: R7
-    name: department_branch_same_company
+    name: department_branch_visible
     when: writing
-    assert: "branch_id present => branch exists AND branch.company_id == company_id"
-    error_code: branch_different_company
+    assert: "branch_id present => branch exists and is visible to the caller"
+    error_code: branch_not_found
   - id: R8
     name: department_no_self_parent
     when: writing
@@ -99,6 +99,8 @@ rules:
 
 # -----------------------------------------------------------------------------
 # Domain events (emission is the parent service's responsibility).
+# company_id payloads are REGISTRY IDENTITY (the company's own id), never a
+# tenant axis on scoped rows (ADR-0029).
 # -----------------------------------------------------------------------------
 events:
   CompanyOnboarded:
@@ -106,10 +108,10 @@ events:
     payload: [company_id, hq_branch_id, code]
   BranchAdded:
     when: "a branch is created"
-    payload: [company_id, branch_id, is_head_office]
+    payload: [parent_unit_id, branch_id, is_head_office]
   DepartmentAdded:
     when: "a department is created"
-    payload: [company_id, department_id]
+    payload: [department_id, branch_id]
   CompanyStatusChanged:
     when: "company status transitions"
     payload: [company_id, from, to]

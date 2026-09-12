@@ -1,8 +1,16 @@
 # ADR-003: Tenant isolation boundary — reaffirm and reconcile drift
 
-**Status**: Accepted — **Applied 2026-07-23**
+**Status**: Accepted — **Applied 2026-07-23** — **amended 2026-09-12 (ADR-0029 strip)**
 **Deciders**: Farid (owner)
 **Related**: ADR-001 (organization boundary — decided schema-per-tenant), ADR-002 (guarded write paths), backbone-pos ADR-0008 (RLS fence pattern), `schema/models/company.model.yaml` header (the drift source)
+
+> **Amendment 2026-09-12**: the module-native `company_id` axis this ADR reasoned about is gone —
+> the module is tenant-agnostic under ADR-0029 (composition-installed tenancy): no scoping column,
+> no module fence; the composing service's decorator installs org-scope isolation. The ADR's core
+> rulings survive unchanged and now apply at the composition layer: schema-per-tenant isolation,
+> and `company_id` on DOCUMENTS in consuming modules stays a cross-able books dimension. The
+> `parent_company_id` column named below no longer exists — the group tree is `org_units.parent_id`
+> (the `company_subsidiaries` view exposes the pairs); `is_default` remains.
 
 ## Context
 

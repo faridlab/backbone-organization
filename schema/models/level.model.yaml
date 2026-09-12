@@ -16,11 +16,6 @@ models:
         attributes: ["@id", "@default(uuid)"]
         description: "Unique level identifier"
 
-      company_id:
-        type: uuid
-        attributes: ["@required", "@foreign_key(Company.id)"]
-        description: "Owning company"
-
       name:
         type: string
         attributes: ["@required", "@max(150)"]
@@ -40,18 +35,6 @@ models:
         attributes: ["@audit_metadata"]
         description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
 
-    relations:
-      company:
-        type: Company
-        attributes: ["@one", "@foreign_key(company_id)"]
-        description: "Owning company"
-        inverse: levels
-
-    indexes:
-      - type: unique
-        fields: [company_id, name]
-        where: "deleted_at IS NULL"
-      - type: index
-        fields: [company_id, order_number]
-      - type: index
-        fields: [company_id]
+    # Tenancy (ADR-0029): the module is tenant-agnostic — no tenant key, no per-unit unique.
+    # Levels are unit-local masters; per-unit name/order lookups are posture — the composing
+    # service's tenancy decorator re-declares them org-scoped.

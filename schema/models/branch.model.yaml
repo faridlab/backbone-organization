@@ -16,15 +16,10 @@ models:
         attributes: ["@id", "@default(uuid)"]
         description: "Unique branch identifier"
 
-      company_id:
-        type: uuid
-        attributes: ["@required", "@foreign_key(Company.id)"]
-        description: "Owning company"
-
       code:
         type: string
         attributes: ["@required", "@max(30)"]
-        description: "Short code, unique within the company"
+        description: "Short code, unique within the owning unit"
 
       name:
         type: string
@@ -93,26 +88,22 @@ models:
         description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
 
     relations:
-      company:
-        type: Company
-        attributes: ["@one", "@foreign_key(company_id)"]
-        description: "Owning company"
-        inverse: branches
-
       departments:
         type: Department[]
         attributes: ["@one_to_many"]
         description: "Departments located at this branch"
         inverse: branch
 
+    # Tenancy (ADR-0029): the module is tenant-agnostic — no tenant key, no per-unit unique.
+    # A branch IS an org-units node (the spine copies branch ids verbatim), so the tree in
+    # organization.org_units already places every branch; per-unit code uniqueness and the
+    # status/head-office lookups are posture — the composing service's tenancy decorator
+    # re-declares them org-scoped.
     indexes:
-      - type: unique
-        fields: [company_id, code]
-        where: "deleted_at IS NULL"
       - type: index
-        fields: [company_id, status]
+        fields: [status]
       - type: index
-        fields: [company_id, is_head_office]
+        fields: [is_head_office]
 
 # =============================================================================
 # Enums

@@ -22,11 +22,6 @@ models:
         attributes: ["@id", "@default(uuid)"]
         description: "Unique link identifier"
 
-      company_id:
-        type: uuid
-        attributes: ["@required", "@foreign_key(Company.id)"]
-        description: "Owning company"
-
       industry_id:
         type: uuid
         attributes: ["@required", "@foreign_key(Industry.id)"]
@@ -35,7 +30,7 @@ models:
       is_primary:
         type: bool
         attributes: ["@default(false)"]
-        description: "The company's main business activity (at most one per company)"
+        description: "The unit's main business activity (at most one per unit)"
 
       metadata:
         type: Metadata
@@ -43,26 +38,12 @@ models:
         description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
 
     relations:
-      company:
-        type: Company
-        attributes: ["@one", "@foreign_key(company_id)"]
-        description: "Owning company"
-        inverse: company_industries
-
       industry:
         type: Industry
         attributes: ["@one", "@foreign_key(industry_id)"]
         description: "Linked industry"
         inverse: company_industries
 
-    indexes:
-      # A company links a given industry at most once.
-      - type: unique
-        fields: [company_id, industry_id]
-        where: "deleted_at IS NULL"
-      # At most one primary industry per company (zero allowed — not-yet-designated).
-      - type: unique
-        fields: [company_id]
-        where: "is_primary = true AND deleted_at IS NULL"
-      - type: index
-        fields: [company_id, is_primary]
+    # Tenancy (ADR-0029): the module is tenant-agnostic — no tenant key, no per-unit unique.
+    # Both the (unit, industry) link uniqueness and the one-primary-per-unit rule are posture —
+    # the composing service's tenancy decorator re-declares them org-scoped.
