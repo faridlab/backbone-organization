@@ -43,9 +43,8 @@ pub use application::service::{
     OnboardingService, OrgWriteError, OrgWriteService, HierarchyService,
 };
 pub use presentation::http::{
-    create_guarded_organization_routes, create_guarded_organization_routes_checked,
-    create_hierarchy_routes, create_onboarding_routes, create_organization_routes,
-    require_known_company,
+    create_guarded_organization_routes, create_hierarchy_routes, create_onboarding_routes,
+    create_organization_routes,
 };
 // END CUSTOM
 pub use application::service::LevelService;

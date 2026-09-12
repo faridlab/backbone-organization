@@ -33,6 +33,6 @@ pub use position_handler::{create_position_routes, create_position_read_routes, 
 pub use structure_handler::{create_structure_routes, create_structure_read_routes, create_structure_write_routes};
 // <<< CUSTOM
 pub use onboarding_handler::{create_onboarding_routes, create_organization_routes};
-pub use guarded_routes::{create_guarded_organization_routes, create_guarded_organization_routes_checked, require_known_company};
+pub use guarded_routes::create_guarded_organization_routes;
 pub use hierarchy_handler::create_hierarchy_routes;
 // END CUSTOM

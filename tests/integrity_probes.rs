@@ -4,10 +4,17 @@
 //! invariants on EVERY write path, not just onboarding:
 //!   - Company has no generic write route at all (writer = onboarding only).
 //!   - Branch/Department writes validate NPWP format, node kind, and link visibility.
-//!   - Branch writes derive their attach point from a signed token, never from the body.
+//!   - Branch writes derive their attach point from the authenticated principal, never from the
+//!     body.
 //! These hit the ROUTES (via tower oneshot), not the services — closing the structural blind spot
 //! the golden suite had (it only ever constructed services directly).
 //! Requires DATABASE_URL (defaults to local dev Postgres on :5433).
+//!
+//! The guarded surface ships BARE of auth (ADR-0029, the org-composed shape): token validation
+//! and unit-tree resolution belong to the composing service's org guard and are proven by ITS
+//! probes. What this suite proves are the handler-side invariants given a principal — so the
+//! principal-carrying legs wrap the bare router in a stand-in layer that inserts `OrgContext`,
+//! exactly where the composing guard inserts it.
 //!
 //! IGC-1..IGC-4  the CRUD-bypass and validated-write invariants.
 //! IGT-1..IGT-3  the tenancy invariants (mirrors the TG-* cases backbone-pos proved).
@@ -15,31 +22,13 @@
 
 use axum::body::Body;
 use axum::http::{header, Request, StatusCode};
-use backbone_auth::company::CompanyVerifier;
-use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
-use serde::Serialize;
+use axum::middleware::Next;
+use backbone_auth::org::OrgContext;
 use sqlx::PgPool;
 use tower::ServiceExt;
 use uuid::Uuid;
 
 use backbone_organization::{create_guarded_organization_routes, OrganizationModule};
-
-const SECRET: &[u8] = b"organization-integrity-probe-secret";
-
-#[derive(Serialize)]
-struct TestClaims {
-    sub: String,
-    exp: usize,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    company_id: Option<Uuid>,
-}
-
-/// Mint an HS256 access token. `company_id = None` models a token that authenticates a user but
-/// carries no tenant — it must not be allowed to write.
-fn token(company_id: Option<Uuid>) -> String {
-    let claims = TestClaims { sub: "probe-user".into(), exp: 9_999_999_999, company_id };
-    encode(&Header::new(Algorithm::HS256), &claims, &EncodingKey::from_secret(SECRET)).unwrap()
-}
 
 async fn pool() -> PgPool {
     let url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
@@ -52,39 +41,45 @@ async fn module(pool: &PgPool) -> OrganizationModule {
     OrganizationModule::builder().with_database(pool.clone()).build().unwrap()
 }
 
+/// The bare guarded router — what a composing service receives before it wraps anything.
 fn app(m: &OrganizationModule) -> axum::Router {
-    create_guarded_organization_routes(m, CompanyVerifier::hs256(SECRET))
+    create_guarded_organization_routes(m)
 }
 
-/// Send a request with an optional bearer token.
-async fn send_with(
-    app: axum::Router,
-    method: &str,
-    uri: &str,
-    body: &str,
-    bearer: Option<String>,
-) -> (StatusCode, String) {
-    let mut builder = Request::builder()
-        .method(method)
-        .uri(uri)
-        .header("content-type", "application/json");
-    if let Some(t) = bearer {
-        builder = builder.header(header::AUTHORIZATION, format!("Bearer {t}"));
-    }
-    let resp = app.oneshot(builder.body(Body::from(body.to_string())).unwrap()).await.unwrap();
-    let status = resp.status();
-    let bytes = axum::body::to_bytes(resp.into_body(), 64 * 1024).await.unwrap();
-    (status, String::from_utf8_lossy(&bytes).to_string())
+/// The guarded router wrapped in a stand-in for the composing service's org guard: a layer that
+/// inserts the authenticated principal (`OrgContext`) the handlers read. `acting_unit` is the
+/// node the session acts at — the only source a handler accepts for a write's attach point.
+fn app_as(m: &OrganizationModule, acting_unit: Uuid) -> axum::Router {
+    let ctx = OrgContext {
+        acting_unit_id: acting_unit,
+        entitled_units: vec![acting_unit],
+        legacy_company_id: None,
+        user_id: "probe-user".into(),
+    };
+    app(m).layer(axum::middleware::from_fn(
+        move |mut req: Request<Body>, next: Next| {
+            let ctx = ctx.clone();
+            async move {
+                req.extensions_mut().insert(ctx);
+                Ok::<_, std::convert::Infallible>(next.run(req).await)
+            }
+        },
+    ))
 }
 
-/// Unauthenticated request.
 async fn send(app: axum::Router, method: &str, uri: &str, body: &str) -> StatusCode {
-    send_with(app, method, uri, body, None).await.0
-}
-
-/// Request authenticated as a principal of `company`.
-async fn send_as(app: axum::Router, company: Uuid, method: &str, uri: &str, body: &str) -> StatusCode {
-    send_with(app, method, uri, body, Some(token(Some(company)))).await.0
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(method)
+                .uri(uri)
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(body.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    resp.status()
 }
 
 fn code(prefix: &str) -> String {
@@ -140,7 +135,7 @@ async fn guarded_branch_rejects_bad_npwp() {
     let pool = pool().await;
     let cid = seed_company(&pool, &code("BRC")).await;
     let body = format!(r#"{{"code":"{}","name":"Cabang","npwp":"12345"}}"#, code("BR"));
-    let status = send_as(app(&module(&pool).await), cid, "POST", "/branches", &body).await;
+    let status = send(app_as(&module(&pool).await, cid), "POST", "/branches", &body).await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "bad NPWP must be rejected");
 }
 
@@ -158,7 +153,7 @@ async fn guarded_department_rejects_dangling_parent() {
         r#"{{"code":"{}","name":"Cross","parentId":"{ghost_parent}"}}"#,
         code("DEP")
     );
-    let status = send_as(app(&module(&pool).await), host, "POST", "/departments", &body).await;
+    let status = send(app_as(&module(&pool).await, host), "POST", "/departments", &body).await;
     assert_eq!(
         status,
         StatusCode::UNPROCESSABLE_ENTITY,
@@ -182,7 +177,7 @@ async fn guarded_valid_writes_succeed() {
 
     // Valid branch (valid 15-digit NPWP).
     let branch_body = format!(r#"{{"code":"{}","name":"HQ","npwp":"012345678901234"}}"#, code("OKB"));
-    let bs = send_as(app(&module(&pool).await), cid, "POST", "/branches", &branch_body).await;
+    let bs = send(app_as(&module(&pool).await, cid), "POST", "/branches", &branch_body).await;
     assert_eq!(bs, StatusCode::CREATED, "valid branch should be created");
 
     // Valid department (visible live parent).
@@ -194,12 +189,14 @@ async fn guarded_valid_writes_succeed() {
         .await
         .unwrap();
     let dep_body = format!(r#"{{"code":"{}","name":"Child","parentId":"{parent}"}}"#, code("OKD"));
-    let ds = send_as(app(&module(&pool).await), cid, "POST", "/departments", &dep_body).await;
+    let ds = send(app_as(&module(&pool).await, cid), "POST", "/departments", &dep_body).await;
     assert_eq!(ds, StatusCode::CREATED, "valid department should be created");
 }
 
-// ── IGT-1: an unauthenticated write is rejected. Before the tenant guard this create succeeded and
-// stamped whatever `companyId` the caller put in the body. ──
+// ── IGT-1: a write with no authenticated principal is rejected — on the BARE router the
+// `OrgContext` extractor itself refuses (401), so no request ever reaches a handler without one.
+// Before the tenant guard this create succeeded and stamped whatever `companyId` the caller put
+// in the body. ──
 #[tokio::test]
 async fn guarded_write_rejects_unauthenticated() {
     let pool = pool().await;
@@ -217,26 +214,21 @@ async fn guarded_write_rejects_unauthenticated() {
     assert_eq!(dstatus, StatusCode::UNAUTHORIZED, "an unauthenticated dept write must not reach the service");
 }
 
-// ── IGT-2: a token that authenticates a user but carries no `company_id` claim is rejected — a
-// writer that cannot name its tenant must never run. ──
+// ── IGT-2: a principal that cannot name a unit must never write. Token validation and unit-tree
+// resolution belong to the composing service's org guard (its probes prove them); the module-side
+// invariant is that the handler accepts the attach point from NO source but the inserted
+// `OrgContext` — a body that names a `companyId` while the principal is absent is still refused. ──
 #[tokio::test]
-async fn guarded_write_rejects_token_without_company_id() {
+async fn guarded_write_rejects_principal_without_unit() {
     let pool = pool().await;
     let cid = seed_company(&pool, &code("NOCID")).await;
     let body = format!(r#"{{"companyId":"{cid}","code":"{}","name":"Cabang"}}"#, code("BR"));
-    let (status, _) = send_with(
-        app(&module(&pool).await),
-        "POST",
-        "/branches",
-        &body,
-        Some(token(None)),
-    )
-    .await;
-    assert_eq!(status, StatusCode::UNAUTHORIZED, "a token with no tenant must not write");
+    let status = send(app(&module(&pool).await), "POST", "/branches", &body).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED, "a request with no principal must not write");
 }
 
 // ── IGT-3: a `companyId` smuggled in the body is ignored — the persisted placement is the
-// token's. This is the regression that motivated the change: the body must not name where a
+// principal's. This is the regression that motivated the change: the body must not name where a
 // write lands. A branch's landing spot is its org-units node's parent; a department carries no
 // tenant axis at all (ADR-0029), so its smuggle is ignored by construction. ──
 #[tokio::test]
@@ -250,10 +242,10 @@ async fn body_company_id_cannot_override_the_token_tenant() {
     let body = format!(
         r#"{{"companyId":"{attacker_company}","code":"{branch_code}","name":"Smuggled"}}"#
     );
-    let status = send_as(app(&module(&pool).await), token_company, "POST", "/branches", &body).await;
+    let status = send(app_as(&module(&pool).await, token_company), "POST", "/branches", &body).await;
     assert_eq!(status, StatusCode::CREATED);
 
-    // The branch's node attaches under the TOKEN's company node — the body's id was ignored.
+    // The branch's node attaches under the PRINCIPAL's company node — the body's id was ignored.
     let persisted: Uuid = sqlx::query_scalar(
         "SELECT u.parent_id FROM organization.org_units u \
          WHERE u.id = (SELECT b.id FROM organization.branches b WHERE b.code = $1)",
@@ -271,7 +263,7 @@ async fn body_company_id_cannot_override_the_token_tenant() {
         r#"{{"companyId":"{attacker_company}","code":"{dept_code}","name":"Smuggled"}}"#
     );
     let dstatus =
-        send_as(app(&module(&pool).await), token_company, "POST", "/departments", &dbody).await;
+        send(app_as(&module(&pool).await, token_company), "POST", "/departments", &dbody).await;
     assert_eq!(dstatus, StatusCode::CREATED);
 
     let drow: Uuid =
