@@ -43,8 +43,10 @@ use crate::application::service::org_write_service::{NewBranch, NewDepartment, O
 use crate::OrganizationModule;
 
 use super::{
-    create_branch_read_routes, create_company_read_routes, create_department_read_routes,
-    create_hierarchy_routes, create_onboarding_routes,
+    create_branch_read_routes, create_company_industry_read_routes, create_company_read_routes,
+    create_department_read_routes, create_hierarchy_routes, create_industry_read_routes,
+    create_level_read_routes, create_onboarding_routes, create_org_unit_read_routes,
+    create_position_read_routes, create_structure_read_routes,
 };
 
 #[derive(Debug, Serialize)]
@@ -213,4 +215,15 @@ pub fn create_guarded_organization_routes(m: &OrganizationModule) -> Router {
         .merge(create_branch_read_routes(m.branch_service.clone()))
         .merge(create_department_read_routes(m.department_service.clone()))
         .merge(create_org_write_routes(m.org_write_service.clone()))
+        // The reference masters the admin surface navigates: industries and
+        // the company-industry links (the company screen's picker), the
+        // level/position/structure masters, and the org-unit spine rows the
+        // entity-shaped views expect. READS ONLY — writes for these ride
+        // validated verbs (or later gates), never generic CRUD.
+        .merge(create_company_industry_read_routes(m.company_industry_service.clone()))
+        .merge(create_industry_read_routes(m.industry_service.clone()))
+        .merge(create_level_read_routes(m.level_service.clone()))
+        .merge(create_position_read_routes(m.position_service.clone()))
+        .merge(create_structure_read_routes(m.structure_service.clone()))
+        .merge(create_org_unit_read_routes(m.org_unit_service.clone()))
 }
