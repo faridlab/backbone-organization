@@ -51,7 +51,7 @@ models:
       manager_id:
         type: uuid?
         attributes: ["@exclude_from_foreign_key_check"]
-        description: "Department manager # logical FK to sapiens.User.id"
+        description: "Department manager # logical FK employee.Employee.id (one id space: employments.direct_manager_id carries an employee id too; approver resolution never converts)"
 
       sort_order:
         type: int

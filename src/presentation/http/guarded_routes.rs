@@ -45,8 +45,9 @@ use crate::OrganizationModule;
 use super::{
     create_branch_read_routes, create_company_industry_read_routes, create_company_read_routes,
     create_department_read_routes, create_hierarchy_routes, create_industry_read_routes,
-    create_level_read_routes, create_onboarding_routes, create_org_unit_read_routes,
-    create_position_read_routes, create_structure_read_routes,
+    create_level_read_routes, create_level_write_routes, create_onboarding_routes,
+    create_org_unit_read_routes, create_position_read_routes, create_position_write_routes,
+    create_structure_read_routes, create_structure_write_routes,
 };
 
 #[derive(Debug, Serialize)]
@@ -222,8 +223,12 @@ pub fn create_guarded_organization_routes(m: &OrganizationModule) -> Router {
         // validated verbs (or later gates), never generic CRUD.
         .merge(create_company_industry_read_routes(m.company_industry_service.clone()))
         .merge(create_industry_read_routes(m.industry_service.clone()))
-        .merge(create_level_read_routes(m.level_service.clone()))
-        .merge(create_position_read_routes(m.position_service.clone()))
-        .merge(create_structure_read_routes(m.structure_service.clone()))
+        // The org masters HR administers: levels, positions, structures.
+        // Reference data with generated state machines of their own — the
+        // generic write surface (create/update + the state verbs it mounts)
+        // is the validated lane; there is no coupling to guard beyond it.
+        .merge(create_level_write_routes(m.level_service.clone()))
+        .merge(create_position_write_routes(m.position_service.clone()))
+        .merge(create_structure_write_routes(m.structure_service.clone()))
         .merge(create_org_unit_read_routes(m.org_unit_service.clone()))
 }
