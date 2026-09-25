@@ -49,6 +49,7 @@ use super::{
     create_org_unit_read_routes, create_position_read_routes, create_position_write_routes,
     create_structure_read_routes, create_structure_write_routes,
 };
+// (the read composers are re-imported above; keep both surfaces live)
 
 #[derive(Debug, Serialize)]
 struct ErrorBody {
@@ -230,5 +231,11 @@ pub fn create_guarded_organization_routes(m: &OrganizationModule) -> Router {
         .merge(create_level_write_routes(m.level_service.clone()))
         .merge(create_position_write_routes(m.position_service.clone()))
         .merge(create_structure_write_routes(m.structure_service.clone()))
+        // The READ routes stay mounted beside the writes: the pickers and
+        // label columns across the webapp live on them, and the generated
+        // write composers do not carry the GETs.
+        .merge(create_level_read_routes(m.level_service.clone()))
+        .merge(create_position_read_routes(m.position_service.clone()))
+        .merge(create_structure_read_routes(m.structure_service.clone()))
         .merge(create_org_unit_read_routes(m.org_unit_service.clone()))
 }

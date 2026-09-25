@@ -266,7 +266,7 @@ dependencies = [
 
 [[package]]
 name = "backbone-organization"
-version = "0.4.19"
+version = "0.4.24"
 dependencies = [
  "anyhow",
  "async-trait",
