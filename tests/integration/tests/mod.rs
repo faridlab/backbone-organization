@@ -17,7 +17,6 @@ pub mod position_api_test;
 pub mod structure_api_test;
 
 // Re-exports for convenience
-pub use crud_test_base::*;
 pub use branch_api_test::*;
 pub use company_api_test::*;
 pub use company_industry_api_test::*;

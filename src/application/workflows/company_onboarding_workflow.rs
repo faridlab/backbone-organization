@@ -5,8 +5,10 @@
 //! Bring a new legal entity onto the platform atomically:
 //! - validate NPWP format (15/16 digits) before any write
 //! - fast pre-check on company code uniqueness (the partial unique index is the real arbiter)
-//! - in one transaction: create the Company, then its head-office Branch
-//! - a company is never born without a head office
+//! - in one transaction: create the Company, mint its org_units node under the tenant root
+//!   (id = company id, kind 'company'), then the head-office Branch row + its own node under
+//!   the company node
+//! - a company is never born unplaced or without a head office
 //! On a unique violation the constraint name distinguishes duplicate_company_code vs duplicate_npwp.
 
 use serde::{Deserialize, Serialize};
@@ -69,8 +71,12 @@ pub enum CompanyOnboardingFlowStep {
     CheckCodeUnique,
     /// write_company
     WriteCompany,
+    /// mint_company_node
+    MintCompanyNode,
     /// write_head_office_branch
     WriteHeadOfficeBranch,
+    /// mint_hq_branch_node
+    MintHqBranchNode,
     /// onboarded
     Onboarded,
     /// rejected_invalid_npwp
@@ -185,8 +191,20 @@ pub trait CompanyOnboardingStepHandler: Send + Sync {
         instance: &mut CompanyOnboardingFlowInstance,
     ) -> Result<Option<CompanyOnboardingFlowStep>, FlowError>;
 
+    /// Handle mint_company_node step
+    async fn handle_mint_company_node(
+        &self,
+        instance: &mut CompanyOnboardingFlowInstance,
+    ) -> Result<Option<CompanyOnboardingFlowStep>, FlowError>;
+
     /// Handle write_head_office_branch step
     async fn handle_write_head_office_branch(
+        &self,
+        instance: &mut CompanyOnboardingFlowInstance,
+    ) -> Result<Option<CompanyOnboardingFlowStep>, FlowError>;
+
+    /// Handle mint_hq_branch_node step
+    async fn handle_mint_hq_branch_node(
         &self,
         instance: &mut CompanyOnboardingFlowInstance,
     ) -> Result<Option<CompanyOnboardingFlowStep>, FlowError>;
@@ -247,8 +265,14 @@ impl<H: CompanyOnboardingStepHandler> CompanyOnboardingFlowExecutor<H> {
             CompanyOnboardingFlowStep::WriteCompany => {
                 self.handler.handle_write_company(instance).await?
             }
+            CompanyOnboardingFlowStep::MintCompanyNode => {
+                self.handler.handle_mint_company_node(instance).await?
+            }
             CompanyOnboardingFlowStep::WriteHeadOfficeBranch => {
                 self.handler.handle_write_head_office_branch(instance).await?
+            }
+            CompanyOnboardingFlowStep::MintHqBranchNode => {
+                self.handler.handle_mint_hq_branch_node(instance).await?
             }
             CompanyOnboardingFlowStep::Onboarded => {
                 self.handler.handle_onboarded(instance).await?;

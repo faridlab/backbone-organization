@@ -24,6 +24,16 @@ pub mod application;
 pub mod presentation;
 pub mod seeders;
 pub mod exports;
+// <<< CUSTOM MODULES
+pub use application::service::{
+    validate_npwp, NewBranch, NewDepartment, OnboardError, OnboardRequest, OnboardResult,
+    OnboardingService, OrgWriteError, OrgWriteService, HierarchyService,
+};
+pub use presentation::http::{
+    create_guarded_organization_routes, create_hierarchy_routes, create_onboarding_routes,
+    create_organization_routes,
+};
+// END CUSTOM
 
 // Re-exports for convenience - Domain entities
 pub use domain::entity::*;
@@ -37,20 +47,13 @@ pub use application::service::CompanyService;
 pub use application::service::CompanyIndustryService;
 pub use application::service::DepartmentService;
 pub use application::service::IndustryService;
-// <<< CUSTOM
-pub use application::service::{
-    validate_npwp, NewBranch, NewDepartment, OnboardError, OnboardRequest, OnboardResult,
-    OnboardingService, OrgWriteError, OrgWriteService, HierarchyService,
-};
-pub use presentation::http::{
-    create_guarded_organization_routes, create_hierarchy_routes, create_onboarding_routes,
-    create_organization_routes,
-};
-// END CUSTOM
 pub use application::service::LevelService;
 pub use application::service::OrgUnitService;
 pub use application::service::PositionService;
 pub use application::service::StructureService;
+
+// Re-exports - Validation
+pub use application::validator::{ValidationError, ValidationResult};
 
 // Re-exports - Workflows
 pub use application::workflows::*;
@@ -174,6 +177,8 @@ impl OrganizationModule {
 /// Builder for OrganizationModule
 pub struct OrganizationModuleBuilder {
     db_pool: Option<PgPool>,
+    // <<< CUSTOM BUILDER FIELDS
+    // END CUSTOM
 }
 
 impl OrganizationModuleBuilder {
@@ -181,6 +186,8 @@ impl OrganizationModuleBuilder {
     pub fn new() -> Self {
         Self {
             db_pool: None,
+            // <<< CUSTOM BUILDER DEFAULTS
+            // END CUSTOM
         }
     }
 
