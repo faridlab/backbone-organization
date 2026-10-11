@@ -18,9 +18,6 @@ pub mod position_service;
 pub mod structure_service;
 
 // <<< CUSTOM
-pub mod onboarding_service;
-pub mod org_write_service;
-pub mod hierarchy_service;
 // END CUSTOM
 
 pub use branch_service::BranchService;
@@ -33,12 +30,7 @@ pub use org_unit_service::OrgUnitService;
 pub use position_service::PositionService;
 pub use structure_service::StructureService;
 // <<< CUSTOM
-pub use onboarding_service::{
-    validate_npwp, OnboardError, OnboardRequest, OnboardResult, OnboardingService,
-};
-pub use org_write_service::{NewBranch, NewDepartment, OrgWriteError, OrgWriteService};
-pub use hierarchy_service::{
-    BranchHierarchy, CompanyHierarchy, CompanyInfo, DepartmentNode, HierarchyError,
-    HierarchyService,
-};
 // END CUSTOM
+
+// This directory's extension (hand-written; ADR-0031).
+include!("mod.ext.rs");

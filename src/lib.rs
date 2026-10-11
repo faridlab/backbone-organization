@@ -25,15 +25,17 @@ pub mod presentation;
 pub mod seeders;
 pub mod exports;
 // <<< CUSTOM MODULES
-pub use application::service::{
-    validate_npwp, NewBranch, NewDepartment, OnboardError, OnboardRequest, OnboardResult,
-    OnboardingService, OrgWriteError, OrgWriteService, HierarchyService,
-};
-pub use presentation::http::{
-    create_guarded_organization_routes, create_hierarchy_routes, create_onboarding_routes,
-    create_organization_routes,
-};
 // END CUSTOM
+
+// The module's extension (hand-written; ADR-0031).
+#[path = "lib.ext.rs"]
+mod lib_ext;
+pub use lib_ext::*;
+/// This crate's module and builder under fixed names, for the extension's `impl` blocks.
+#[allow(dead_code)]
+pub(crate) type ThisModule = OrganizationModule;
+#[allow(dead_code)]
+pub(crate) type ThisModuleBuilder = OrganizationModuleBuilder;
 
 // Re-exports for convenience - Domain entities
 pub use domain::entity::*;
@@ -84,14 +86,47 @@ pub struct OrganizationModule {
     pub(crate) org_unit_service: Arc<OrgUnitService>,
     pub(crate) position_service: Arc<PositionService>,
     pub(crate) structure_service: Arc<StructureService>,
+    /// The module's extension state (`lib.ext.rs`); its fields read through `Deref`.
+    pub(crate) ext: ModuleExt,
     // <<< CUSTOM FIELDS
-    /// Atomic company onboarding (Company + head-office Branch in one transaction).
-    pub onboarding_service: Arc<OnboardingService>,
-    /// Validated Branch/Department writes (NPWP format, same-company parent/branch, no cycle).
-    pub org_write_service: Arc<OrgWriteService>,
-    /// Company operational hierarchy read (Company → Branches → Departments tree).
-    pub hierarchy_service: Arc<HierarchyService>,
     // END CUSTOM
+}
+
+impl std::ops::Deref for OrganizationModule {
+    type Target = ModuleExt;
+    fn deref(&self) -> &Self::Target {
+        &self.ext
+    }
+}
+
+impl std::ops::DerefMut for OrganizationModule {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.ext
+    }
+}
+
+/// What the extension's `build` hook receives from the generated build (ADR-0031).
+#[allow(dead_code)]
+pub(crate) struct ModuleParts<'a> {
+    pub(crate) db_pool: &'a PgPool,
+    pub(crate) branch_service: &'a Arc<BranchService>,
+    pub(crate) branch_repository: &'a Arc<BranchRepository>,
+    pub(crate) company_service: &'a Arc<CompanyService>,
+    pub(crate) company_repository: &'a Arc<CompanyRepository>,
+    pub(crate) company_industry_service: &'a Arc<CompanyIndustryService>,
+    pub(crate) company_industry_repository: &'a Arc<CompanyIndustryRepository>,
+    pub(crate) department_service: &'a Arc<DepartmentService>,
+    pub(crate) department_repository: &'a Arc<DepartmentRepository>,
+    pub(crate) industry_service: &'a Arc<IndustryService>,
+    pub(crate) industry_repository: &'a Arc<IndustryRepository>,
+    pub(crate) level_service: &'a Arc<LevelService>,
+    pub(crate) level_repository: &'a Arc<LevelRepository>,
+    pub(crate) org_unit_service: &'a Arc<OrgUnitService>,
+    pub(crate) org_unit_repository: &'a Arc<OrgUnitRepository>,
+    pub(crate) position_service: &'a Arc<PositionService>,
+    pub(crate) position_repository: &'a Arc<PositionRepository>,
+    pub(crate) structure_service: &'a Arc<StructureService>,
+    pub(crate) structure_repository: &'a Arc<StructureRepository>,
 }
 
 impl OrganizationModule {
@@ -177,8 +212,23 @@ impl OrganizationModule {
 /// Builder for OrganizationModule
 pub struct OrganizationModuleBuilder {
     db_pool: Option<PgPool>,
+    /// The builder's extension state (`lib.ext.rs`); its fields read through `Deref`.
+    ext: ModuleBuilderExt,
     // <<< CUSTOM BUILDER FIELDS
     // END CUSTOM
+}
+
+impl std::ops::Deref for OrganizationModuleBuilder {
+    type Target = ModuleBuilderExt;
+    fn deref(&self) -> &Self::Target {
+        &self.ext
+    }
+}
+
+impl std::ops::DerefMut for OrganizationModuleBuilder {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.ext
+    }
 }
 
 impl OrganizationModuleBuilder {
@@ -186,6 +236,7 @@ impl OrganizationModuleBuilder {
     pub fn new() -> Self {
         Self {
             db_pool: None,
+            ext: Default::default(),
             // <<< CUSTOM BUILDER DEFAULTS
             // END CUSTOM
         }
@@ -242,10 +293,30 @@ impl OrganizationModuleBuilder {
         let structure_service = Arc::new(StructureService::with_repository(structure_repository.clone()));
 
         // <<< CUSTOM
-        let onboarding_service = Arc::new(OnboardingService::new(db_pool.clone()));
-        let org_write_service = Arc::new(OrgWriteService::new(db_pool.clone()));
-        let hierarchy_service = Arc::new(HierarchyService::new(db_pool.clone()));
         // END CUSTOM
+
+        // The extension builds its own state from what the generated build made.
+        let ext = self.ext.build(&ModuleParts {
+            db_pool: &db_pool,
+            branch_service: &branch_service,
+            branch_repository: &branch_repository,
+            company_service: &company_service,
+            company_repository: &company_repository,
+            company_industry_service: &company_industry_service,
+            company_industry_repository: &company_industry_repository,
+            department_service: &department_service,
+            department_repository: &department_repository,
+            industry_service: &industry_service,
+            industry_repository: &industry_repository,
+            level_service: &level_service,
+            level_repository: &level_repository,
+            org_unit_service: &org_unit_service,
+            org_unit_repository: &org_unit_repository,
+            position_service: &position_service,
+            position_repository: &position_repository,
+            structure_service: &structure_service,
+            structure_repository: &structure_repository,
+        })?;
 
         Ok(OrganizationModule {
             branch_service,
@@ -257,10 +328,8 @@ impl OrganizationModuleBuilder {
             org_unit_service,
             position_service,
             structure_service,
+            ext,
             // <<< CUSTOM
-            onboarding_service,
-            org_write_service,
-            hierarchy_service,
             // END CUSTOM
         })
     }
@@ -271,3 +340,6 @@ impl Default for OrganizationModuleBuilder {
         Self::new()
     }
 }
+
+// This directory's extension (hand-written; ADR-0031).
+include!("mod.ext.rs");
