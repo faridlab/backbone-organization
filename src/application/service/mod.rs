@@ -27,6 +27,9 @@ pub use level_service::LevelService;
 pub use org_unit_service::OrgUnitService;
 pub use position_service::PositionService;
 pub use structure_service::StructureService;
+pub use branch_service::BranchRowRules;
+pub use company_service::CompanyRowRules;
+pub use department_service::DepartmentRowRules;
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

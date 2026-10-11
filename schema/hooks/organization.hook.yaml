@@ -17,6 +17,7 @@ version: 2
 state_machines:
   - entity: Company
     field: status
+    verbs: hand
     initial: active
     states: [active, inactive, suspended, dissolved]
     transitions:
@@ -32,6 +33,7 @@ state_machines:
 
   - entity: Branch
     field: status
+    verbs: hand
     initial: active
     states: [active, inactive]
     transitions:
@@ -40,6 +42,7 @@ state_machines:
 
   - entity: Department
     field: status
+    verbs: hand
     initial: active
     states: [active, inactive]
     transitions:

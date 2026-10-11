@@ -246,11 +246,11 @@ impl OrganizationModuleBuilder {
 
         // Branch service
         let branch_repository = Arc::new(BranchRepository::new(db_pool.clone()));
-        let branch_service = Arc::new(BranchService::with_repository(branch_repository.clone()));
+        let branch_service = Arc::new(BranchService::with_repository(branch_repository.clone()).with_guard(Arc::new(crate::application::service::BranchRowRules)));
 
         // Company service
         let company_repository = Arc::new(CompanyRepository::new(db_pool.clone()));
-        let company_service = Arc::new(CompanyService::with_repository(company_repository.clone()));
+        let company_service = Arc::new(CompanyService::with_repository(company_repository.clone()).with_guard(Arc::new(crate::application::service::CompanyRowRules)));
 
         // CompanyIndustry service
         let company_industry_repository = Arc::new(CompanyIndustryRepository::new(db_pool.clone()));
@@ -258,7 +258,7 @@ impl OrganizationModuleBuilder {
 
         // Department service
         let department_repository = Arc::new(DepartmentRepository::new(db_pool.clone()));
-        let department_service = Arc::new(DepartmentService::with_repository(department_repository.clone()));
+        let department_service = Arc::new(DepartmentService::with_repository(department_repository.clone()).with_guard(Arc::new(crate::application::service::DepartmentRowRules)));
 
         // Industry service
         let industry_repository = Arc::new(IndustryRepository::new(db_pool.clone()));
