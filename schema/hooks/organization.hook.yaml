@@ -89,6 +89,7 @@ rules:
   - id: R8
     name: department_no_self_parent
     when: writing
+    enforced_by: "src/application/service/org_write_service.rs::validate_dept_links"
     assert: "parent_id != self.id"
     error_code: self_parent
   - id: R9
