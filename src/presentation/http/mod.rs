@@ -15,8 +15,6 @@ pub mod org_unit_handler;
 pub mod position_handler;
 pub mod structure_handler;
 
-// <<< CUSTOM
-// END CUSTOM
 
 // Re-exports
 pub use branch_handler::{create_branch_routes, create_branch_read_routes, create_branch_write_routes};
@@ -28,8 +26,6 @@ pub use level_handler::{create_level_routes, create_level_read_routes, create_le
 pub use org_unit_handler::{create_org_unit_routes, create_org_unit_read_routes, create_org_unit_write_routes};
 pub use position_handler::{create_position_routes, create_position_read_routes, create_position_write_routes};
 pub use structure_handler::{create_structure_routes, create_structure_read_routes, create_structure_write_routes};
-// <<< CUSTOM
-// END CUSTOM
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

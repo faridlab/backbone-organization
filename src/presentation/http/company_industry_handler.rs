@@ -186,3 +186,4 @@ pub fn create_protected_company_industry_routes<A: AuthMiddleware + Send + Sync 
             }
         }))
 }
+

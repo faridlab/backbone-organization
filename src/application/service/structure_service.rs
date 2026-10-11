@@ -32,5 +32,3 @@ pub type StructureService = GenericCrudService<
     StructureRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

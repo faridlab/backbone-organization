@@ -11,8 +11,6 @@ use crate::domain::entity::Level;
 /// enum containing a `Crud(CrudEvent<Level>)` variant.
 pub type LevelEvent = CrudEvent<Level>;
 
-// <<< CUSTOM
-// END CUSTOM
 
 use backbone_messaging::{CrudEventPublisher, NoOpCrudEventPublisher};
 use std::sync::Arc;

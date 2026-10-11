@@ -246,7 +246,7 @@ impl backbone_core::ApplyUpdateDto<UpdateStructureDto> for Structure {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Structure here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

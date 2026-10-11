@@ -131,6 +131,4 @@ mod tests {
 // CUSTOM TESTS
 // ============================================================================
 
-// <<< CUSTOM TESTS START >>>
 // Add Company specific tests here
-// <<< CUSTOM TESTS END >>>

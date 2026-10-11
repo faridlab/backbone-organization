@@ -32,5 +32,3 @@ pub type PositionService = GenericCrudService<
     PositionRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

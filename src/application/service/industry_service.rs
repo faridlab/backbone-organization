@@ -32,5 +32,3 @@ pub type IndustryService = GenericCrudService<
     IndustryRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

@@ -17,9 +17,5 @@ pub fn industry_validator() -> IndustryValidator {
     EntityValidator::new()
         .rule(RequiredString::new("code", |e: &Industry| &e.code))
         .rule(RequiredString::new("name", |e: &Industry| &e.name))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

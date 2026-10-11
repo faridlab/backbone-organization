@@ -32,5 +32,3 @@ pub type BranchService = GenericCrudService<
     BranchRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

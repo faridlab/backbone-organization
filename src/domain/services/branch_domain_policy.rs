@@ -18,5 +18,3 @@ use crate::domain::entity::Branch;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type BranchDomainPolicy = PermitAllPolicy<Branch>;
 
-// <<< CUSTOM
-// END CUSTOM

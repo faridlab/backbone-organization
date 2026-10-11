@@ -18,5 +18,3 @@ use crate::domain::entity::Level;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type LevelDomainPolicy = PermitAllPolicy<Level>;
 
-// <<< CUSTOM
-// END CUSTOM

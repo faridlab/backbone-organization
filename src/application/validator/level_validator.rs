@@ -17,9 +17,5 @@ pub fn level_validator() -> LevelValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &Level| &e.name))
         .rule(OptionalNotBlank::new("grade", |e: &Level| e.grade.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

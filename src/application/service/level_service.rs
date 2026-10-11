@@ -32,5 +32,3 @@ pub type LevelService = GenericCrudService<
     LevelRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

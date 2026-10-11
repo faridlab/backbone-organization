@@ -30,9 +30,5 @@ pub fn company_validator() -> CompanyValidator {
         .rule(OptionalNotBlank::new("postal_code", |e: &Company| e.postal_code.as_deref()))
         .rule(RequiredString::new("country", |e: &Company| &e.country))
         .rule(OptionalNotBlank::new("notes", |e: &Company| e.notes.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

@@ -18,9 +18,5 @@ pub fn position_validator() -> PositionValidator {
         .rule(RequiredString::new("name", |e: &Position| &e.name))
         .rule(OptionalNotBlank::new("code", |e: &Position| e.code.as_deref()))
         .rule(OptionalNotBlank::new("description", |e: &Position| e.description.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

@@ -22,5 +22,3 @@ pub use org_unit_domain_policy::OrgUnitDomainPolicy;
 pub use position_domain_policy::PositionDomainPolicy;
 pub use structure_domain_policy::StructureDomainPolicy;
 
-// <<< CUSTOM
-// END CUSTOM

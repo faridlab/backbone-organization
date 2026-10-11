@@ -18,5 +18,3 @@ use crate::domain::entity::Position;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type PositionDomainPolicy = PermitAllPolicy<Position>;
 
-// <<< CUSTOM
-// END CUSTOM

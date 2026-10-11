@@ -388,7 +388,7 @@ impl backbone_core::ApplyUpdateDto<UpdateBranchDto> for Branch {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Branch here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

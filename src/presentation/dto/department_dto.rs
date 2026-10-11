@@ -326,7 +326,7 @@ impl backbone_core::ApplyUpdateDto<UpdateDepartmentDto> for Department {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Department here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

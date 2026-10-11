@@ -186,3 +186,4 @@ pub fn create_protected_department_routes<A: AuthMiddleware + Send + Sync + 'sta
             }
         }))
 }
+

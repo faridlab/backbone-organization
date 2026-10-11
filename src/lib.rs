@@ -24,8 +24,6 @@ pub mod application;
 pub mod presentation;
 pub mod seeders;
 pub mod exports;
-// <<< CUSTOM MODULES
-// END CUSTOM
 
 // The module's extension (hand-written; ADR-0031).
 #[path = "lib.ext.rs"]
@@ -88,8 +86,6 @@ pub struct OrganizationModule {
     pub(crate) structure_service: Arc<StructureService>,
     /// The module's extension state (`lib.ext.rs`); its fields read through `Deref`.
     pub(crate) ext: ModuleExt,
-    // <<< CUSTOM FIELDS
-    // END CUSTOM
 }
 
 impl std::ops::Deref for OrganizationModule {
@@ -205,8 +201,6 @@ impl OrganizationModule {
             .merge(create_structure_read_routes(self.structure_service.clone()))
     }
 
-    // <<< CUSTOM METHODS
-    // END CUSTOM
 }
 
 /// Builder for OrganizationModule
@@ -214,8 +208,6 @@ pub struct OrganizationModuleBuilder {
     db_pool: Option<PgPool>,
     /// The builder's extension state (`lib.ext.rs`); its fields read through `Deref`.
     ext: ModuleBuilderExt,
-    // <<< CUSTOM BUILDER FIELDS
-    // END CUSTOM
 }
 
 impl std::ops::Deref for OrganizationModuleBuilder {
@@ -237,8 +229,6 @@ impl OrganizationModuleBuilder {
         Self {
             db_pool: None,
             ext: Default::default(),
-            // <<< CUSTOM BUILDER DEFAULTS
-            // END CUSTOM
         }
     }
 
@@ -248,8 +238,6 @@ impl OrganizationModuleBuilder {
         self
     }
 
-    // <<< CUSTOM - custom builder methods
-    // END CUSTOM
 
     /// Build the module with configured dependencies
     pub fn build(self) -> anyhow::Result<OrganizationModule> {
@@ -292,8 +280,6 @@ impl OrganizationModuleBuilder {
         let structure_repository = Arc::new(StructureRepository::new(db_pool.clone()));
         let structure_service = Arc::new(StructureService::with_repository(structure_repository.clone()));
 
-        // <<< CUSTOM
-        // END CUSTOM
 
         // The extension builds its own state from what the generated build made.
         let ext = self.ext.build(&ModuleParts {
@@ -329,8 +315,6 @@ impl OrganizationModuleBuilder {
             position_service,
             structure_service,
             ext,
-            // <<< CUSTOM
-            // END CUSTOM
         })
     }
 }

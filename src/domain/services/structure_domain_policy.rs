@@ -18,5 +18,3 @@ use crate::domain::entity::Structure;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type StructureDomainPolicy = PermitAllPolicy<Structure>;
 
-// <<< CUSTOM
-// END CUSTOM

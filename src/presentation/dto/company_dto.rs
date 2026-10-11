@@ -465,7 +465,7 @@ impl backbone_core::ApplyUpdateDto<UpdateCompanyDto> for Company {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Company here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

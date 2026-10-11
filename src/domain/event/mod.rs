@@ -40,5 +40,3 @@ pub use position_event_handlers::PositionEventHandler;
 pub use structure_events::{StructureEvent, StructureEventPublisher, NoopStructureEventPublisher};
 pub use structure_event_handlers::StructureEventHandler;
 
-// <<< CUSTOM
-// END CUSTOM

@@ -259,7 +259,7 @@ impl backbone_core::ApplyUpdateDto<UpdateOrgUnitDto> for OrgUnit {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to OrgUnit here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

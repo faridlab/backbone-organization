@@ -17,8 +17,6 @@ pub mod org_unit_service;
 pub mod position_service;
 pub mod structure_service;
 
-// <<< CUSTOM
-// END CUSTOM
 
 pub use branch_service::BranchService;
 pub use company_service::CompanyService;
@@ -29,8 +27,6 @@ pub use level_service::LevelService;
 pub use org_unit_service::OrgUnitService;
 pub use position_service::PositionService;
 pub use structure_service::StructureService;
-// <<< CUSTOM
-// END CUSTOM
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

@@ -32,5 +32,3 @@ pub type DepartmentService = GenericCrudService<
     DepartmentRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

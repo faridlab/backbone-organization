@@ -16,9 +16,5 @@ pub type StructureValidator = EntityValidator<Structure>;
 pub fn structure_validator() -> StructureValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &Structure| &e.name))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

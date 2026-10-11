@@ -17,9 +17,5 @@ pub fn org_unit_validator() -> OrgUnitValidator {
     EntityValidator::new()
         .rule(OptionalNotBlank::new("code", |e: &OrgUnit| e.code.as_deref()))
         .rule(RequiredString::new("name", |e: &OrgUnit| &e.name))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

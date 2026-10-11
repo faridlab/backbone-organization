@@ -14,10 +14,6 @@ pub type CompanyIndustryValidator = EntityValidator<CompanyIndustry>;
 /// Build a validator for CompanyIndustry with all schema-defined field rules.
 pub fn company_industry_validator() -> CompanyIndustryValidator {
     EntityValidator::new()
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
         // No schema-derived rules — add custom rules above.
 }
 
-// <<< CUSTOM
-// END CUSTOM

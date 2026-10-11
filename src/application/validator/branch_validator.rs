@@ -25,9 +25,5 @@ pub fn branch_validator() -> BranchValidator {
         .rule(OptionalNotBlank::new("province", |e: &Branch| e.province.as_deref()))
         .rule(OptionalNotBlank::new("postal_code", |e: &Branch| e.postal_code.as_deref()))
         .rule(RequiredString::new("country", |e: &Branch| &e.country))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

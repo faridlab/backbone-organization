@@ -32,5 +32,3 @@ pub type OrgUnitService = GenericCrudService<
     OrgUnitRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

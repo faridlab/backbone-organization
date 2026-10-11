@@ -16,5 +16,3 @@ pub mod org_unit_specification;
 pub mod position_specification;
 pub mod structure_specification;
 
-// <<< CUSTOM
-// END CUSTOM

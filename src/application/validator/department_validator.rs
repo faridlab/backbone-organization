@@ -18,9 +18,5 @@ pub fn department_validator() -> DepartmentValidator {
         .rule(RequiredString::new("code", |e: &Department| &e.code))
         .rule(RequiredString::new("name", |e: &Department| &e.name))
         .rule(NonNegative::new("level", |e: &Department| e.level as i64))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

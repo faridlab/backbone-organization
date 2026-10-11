@@ -25,5 +25,3 @@ pub use org_unit_validator::{OrgUnitValidator, org_unit_validator};
 pub use position_validator::{PositionValidator, position_validator};
 pub use structure_validator::{StructureValidator, structure_validator};
 
-// <<< CUSTOM
-// END CUSTOM

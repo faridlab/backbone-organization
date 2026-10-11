@@ -32,5 +32,3 @@ pub type CompanyService = GenericCrudService<
     CompanyRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM
