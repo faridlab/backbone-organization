@@ -238,4 +238,9 @@ pub fn create_guarded_organization_routes(m: &OrganizationModule) -> Router {
         .merge(create_position_read_routes(m.position_service.clone()))
         .merge(create_structure_read_routes(m.structure_service.clone()))
         .merge(create_org_unit_read_routes(m.org_unit_service.clone()))
+        // Bind the composer's request pool (ADR-0029 pool law) for the verbs: under a tenant
+        // mount the writes go to the tenant's database; without one the composed pool stays the
+        // fallback. Applied AFTER the routes — a Router layer only wraps what was registered
+        // before the call.
+        .layer(axum::middleware::from_fn(crate::request_pool::bind_request_pool))
 }

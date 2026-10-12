@@ -9,6 +9,7 @@
 # routes/mod.rs, lib.rs) and are preserved by the marker mechanism, not listed here.
 
 user_owned:
+  - "src/request_pool.rs"
   # Company onboarding — atomic Company + head-office Branch + NPWP validation.
   - "src/application/service/onboarding_service.rs"
   - "src/presentation/http/onboarding_handler.rs"

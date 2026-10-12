@@ -184,7 +184,9 @@ impl CompanyRepository {
         pool: &PgPool,
         unit_id: Uuid,
     ) -> Result<Option<String>, sqlx::Error> {
-        sqlx::query_scalar("SELECT kind::text FROM organization.org_units WHERE id=$1")
+        sqlx::query_scalar(
+            "SELECT kind::text FROM organization.org_units WHERE id=$1 AND (metadata->>'deleted_at') IS NULL",
+        )
             .bind(unit_id)
             .fetch_optional(pool)
             .await

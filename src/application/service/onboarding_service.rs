@@ -110,6 +110,12 @@ pub struct OnboardingService {
 }
 
 impl OnboardingService {
+    /// The pool a verb writes through: the request's tenant pool when the composing service's
+    /// tenant router installed one (ADR-0029 pool law), else the pool this service was built with.
+    fn rpool(&self) -> PgPool {
+        crate::request_pool::current().unwrap_or_else(|| self.db_pool.clone())
+    }
+
     pub fn new(db_pool: PgPool) -> Self {
         Self {
             companies: Arc::new(CompanyRepository::new(db_pool.clone())),
@@ -128,13 +134,13 @@ impl OnboardingService {
         // Unique company code (fast pre-check; the partial unique index is the real arbiter).
         let exists: Option<Uuid> = self
             .companies
-            .find_live_id_by_code(&self.db_pool, &req.code)
+            .find_live_id_by_code(&self.rpool(), &req.code)
             .await?;
         if exists.is_some() {
             return Err(OnboardError::DuplicateCode(req.code.clone()));
         }
 
-        let mut tx = self.db_pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
 
         let company_id = Uuid::new_v4();
         let entity_type = req.entity_type.clone().unwrap_or_else(|| "pt".to_string());
@@ -183,7 +189,7 @@ impl OnboardingService {
         // company node — the same transaction, so a company can never exist unplaced. The
         // root exists by the spine migration; the ensure-below only covers a truncated tree
         // (a test fixture) — concurrent minters collide on the partial unique index, loudly.
-        let root = match self.companies.find_root_unit(&self.db_pool).await? {
+        let root = match self.companies.find_root_unit(&self.rpool()).await? {
             Some(r) => r,
             None => {
                 let r = Uuid::new_v4();
@@ -202,6 +208,15 @@ impl OnboardingService {
         self.companies
             .insert_unit_node_on(&mut tx, company_id, "company", Some(root), &req.code, display_name)
             .await?;
+
+        // The head office belongs to the company being born, not to the caller's unit: bind the
+        // transaction's scope to the new company node before it is written, so a composing
+        // service's tenancy decorator stamps and fences the branch under that node.
+        backbone_orm::org_scope::bind_org_scope_on(
+            &mut tx,
+            &backbone_orm::org_scope::OrgScope::for_company_unit(company_id),
+        )
+        .await?;
 
         let hq_branch_id = Uuid::new_v4();
         let branch_code = req.hq_branch_code.clone().unwrap_or_else(|| "HQ".to_string());

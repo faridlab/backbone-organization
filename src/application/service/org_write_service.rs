@@ -118,6 +118,12 @@ impl Clone for OrgWriteService {
 }
 
 impl OrgWriteService {
+    /// The pool a verb writes through: the request's tenant pool when the composing service's
+    /// tenant router installed one (ADR-0029 pool law), else the pool this service was built with.
+    fn rpool(&self) -> PgPool {
+        crate::request_pool::current().unwrap_or_else(|| self.db_pool.clone())
+    }
+
     pub fn new(db_pool: PgPool) -> Self {
         let companies = CompanyRepository::new(db_pool.clone());
         let branches = BranchRepository::new(db_pool.clone());
@@ -137,7 +143,7 @@ impl OrgWriteService {
                 return Err(OrgWriteError::InvalidNpwp(n.clone()));
             }
         }
-        match self.companies.find_node_kind(&self.db_pool, b.parent_unit).await? {
+        match self.companies.find_node_kind(&self.rpool(), b.parent_unit).await? {
             Some(k) if k == "company" || k == "branch" => {}
             _ => return Err(OrgWriteError::ParentUnitNotFound(b.parent_unit)),
         }
@@ -155,7 +161,7 @@ impl OrgWriteService {
             phone: b.phone.as_ref(),
             address: b.address.as_ref(),
         };
-        let mut tx = self.db_pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         relay_ambient_scope(&mut tx).await?;
         self.branches.insert_branch_on(&mut tx, &row).await?;
         self.branches
@@ -180,12 +186,12 @@ impl OrgWriteService {
             if Some(pid) == self_id {
                 return Err(OrgWriteError::SelfParent);
             }
-            if !self.departments.exists_live(&self.db_pool, pid).await? {
+            if !self.departments.exists_live(&self.rpool(), pid).await? {
                 return Err(OrgWriteError::ParentNotFound(pid));
             }
         }
         if let Some(bid) = branch_id {
-            if !self.branches.exists_live(&self.db_pool, bid).await? {
+            if !self.branches.exists_live(&self.rpool(), bid).await? {
                 return Err(OrgWriteError::BranchNotFound(bid));
             }
         }
@@ -195,7 +201,7 @@ impl OrgWriteService {
     pub async fn create_department(&self, d: NewDepartment) -> Result<Uuid, OrgWriteError> {
         self.validate_dept_links(d.parent_id, d.branch_id, None).await?;
         let id = Uuid::new_v4();
-        let mut tx = self.db_pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         relay_ambient_scope(&mut tx).await?;
         self.departments
             .insert_department_on(
@@ -224,11 +230,11 @@ impl OrgWriteService {
         parent_id: Option<Uuid>,
         branch_id: Option<Uuid>,
     ) -> Result<(), OrgWriteError> {
-        if !self.departments.exists_live(&self.db_pool, id).await? {
+        if !self.departments.exists_live(&self.rpool(), id).await? {
             return Err(OrgWriteError::DepartmentNotFound(id));
         }
         self.validate_dept_links(parent_id, branch_id, Some(id)).await?;
-        let mut tx = self.db_pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         relay_ambient_scope(&mut tx).await?;
         self.departments
             .repoint_on(&mut tx, id, parent_id, branch_id)
