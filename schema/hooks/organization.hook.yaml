@@ -91,7 +91,8 @@ rules:
     when: writing
     assert: "parent_unit references an existing org_units node of kind company or branch"
     error_code: parent_unit_not_found
-    justification: "PARTLY: create_branch reads the parent node's kind outside its transaction, unlocked and without a deleted_at filter, so a branch can attach under a soft-deleted node; org_units.parent_id carries no foreign key."
+    enforced_by: "src/application/service/org_write_service.rs::create_branch, src/infrastructure/persistence/company_repository.rs::find_node_kind"
+    justification: "The parent node is read live (deleted_at filtered) and must be a company or branch; the read is outside the branch transaction and unlocked, and org_units.parent_id carries no foreign key, but no org-unit delete is mounted."
   - id: R6
     name: department_parent_visible
     entity: Department
