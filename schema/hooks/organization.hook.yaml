@@ -56,50 +56,73 @@ state_machines:
 rules:
   - id: R1
     name: npwp_format
+    entity: Company
     when: writing
     assert: "npwp present => digits(npwp) in {15, 16}"
     error_code: invalid_npwp
+    enforced_by: "src/application/service/onboarding_service.rs::onboard, src/application/service/onboarding_service.rs::validate_npwp, src/application/service/org_write_service.rs::create_branch"
+    justification: "Counts digits as the rule states, on onboarding and the branch create, the only writers mounted; no npwp update path exists."
   - id: R2
     name: company_born_placed_with_head_office
+    entity: Company
     when: onboarding
     assert: "a Company, its org_units node, and a head-office Branch + node are created in the same transaction"
     error_code: none
+    enforced_by: "src/application/service/onboarding_service.rs::onboard"
+    justification: "The company, its node, its head office and the head office's node commit in one transaction or not at all."
   - id: R3
     name: unique_company_code
+    entity: Company
     when: onboarding
     assert: "code unique among non-deleted companies"
     error_code: duplicate_company_code
+    enforced_by: "migrations/20260426220001_create_company_table.up.sql::idx_companies_code, src/application/service/onboarding_service.rs::onboard"
   - id: R4
     name: unique_company_npwp
+    entity: Company
     when: onboarding
     assert: "npwp unique among non-deleted companies when present"
     error_code: duplicate_npwp
+    enforced_by: "migrations/20260426220001_create_company_table.up.sql::idx_companies_npwp, src/application/service/onboarding_service.rs::onboard"
+    justification: "The index compares the number as typed, so the same NPWP with and without separators passes."
   - id: R5
     name: branch_parent_unit_kind
+    entity: Branch
     when: writing
     assert: "parent_unit references an existing org_units node of kind company or branch"
     error_code: parent_unit_not_found
+    justification: "PARTLY: create_branch reads the parent node's kind outside its transaction, unlocked and without a deleted_at filter, so a branch can attach under a soft-deleted node; org_units.parent_id carries no foreign key."
   - id: R6
     name: department_parent_visible
+    entity: Department
     when: writing
     assert: "parent_id present => parent exists and is visible to the caller (a link outside the caller's subtree reads as absent)"
     error_code: parent_not_found
+    enforced_by: "src/application/service/org_write_service.rs::validate_dept_links, migrations/20260426220003_create_department_table.up.sql::fk_departments_parent_id"
+    justification: "Checked before the write, unlocked; the foreign key does not see soft deletes, but no department delete is mounted."
   - id: R7
     name: department_branch_visible
+    entity: Department
     when: writing
     assert: "branch_id present => branch exists and is visible to the caller"
     error_code: branch_not_found
+    enforced_by: "src/application/service/org_write_service.rs::validate_dept_links, migrations/20260426220003_create_department_table.up.sql::fk_departments_branch_id"
+    justification: "As department_parent_visible; a re-point that omits branchId clears the link."
   - id: R8
     name: department_no_self_parent
+    entity: Department
     when: writing
-    enforced_by: "src/application/service/org_write_service.rs::validate_dept_links"
     assert: "parent_id != self.id"
     error_code: self_parent
+    enforced_by: "src/application/service/org_write_service.rs::validate_dept_links"
+    justification: "Refuses a department as its own parent on re-point; longer cycles are not detected."
   - id: R9
     name: company_lifecycle_no_undissolve
+    entity: Company
     when: status_change
     assert: "transition allowed by the Company state machine; dissolved is terminal"
     error_code: invalid_status_transition
+    justification: "NOT ENFORCED: the companies transition trigger only warns, CompanyRowRules reports in shadow, and no verb moves a company's status; it holds only because nothing composed writes companies.status."
 
 # -----------------------------------------------------------------------------
 # Domain events (emission is the parent service's responsibility).

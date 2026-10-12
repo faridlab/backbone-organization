@@ -1,15 +1,9 @@
 # The rule ratchet (schema doctor): these counts may only go down. Regenerate with
 # `metaphor schema rules . --update-baseline` after enforcing a rule.
-unenforced: 8
-warnings: 9
+unenforced: 2
+warnings: 0
 machines_without_verbs: 0
 untested_rule_ids: 9
 unenforced_rules:
 - 'organization.hook.yaml: branch_parent_unit_kind'
-- 'organization.hook.yaml: company_born_placed_with_head_office'
 - 'organization.hook.yaml: company_lifecycle_no_undissolve'
-- 'organization.hook.yaml: department_branch_visible'
-- 'organization.hook.yaml: department_parent_visible'
-- 'organization.hook.yaml: npwp_format'
-- 'organization.hook.yaml: unique_company_code'
-- 'organization.hook.yaml: unique_company_npwp'
