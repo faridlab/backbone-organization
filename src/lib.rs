@@ -52,9 +52,6 @@ pub use application::service::OrgUnitService;
 pub use application::service::PositionService;
 pub use application::service::StructureService;
 
-// Re-exports - Workflows
-pub use application::workflows::*;
-
 use std::sync::Arc;
 use axum::Router;
 use sqlx::PgPool;
