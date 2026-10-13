@@ -68,7 +68,7 @@ impl backbone_core::write_guard::WriteGuard<Branch> for BranchRowRules {
         }
         // `code_max_length` (@max(30) on Branch.code)
         if (create || (update && r::changed(old.as_ref(), row, &["code"]))) && !r::holds(&r::le(r::length(r::field(row, "code")), r::Val::Num(30.0_f64))) {
-            shadow.push(Violation::new("code", "max_length", "code must be at most 30 characters").with_param("max", 30_i64));
+            refuse.push(Violation::new("code", "max_length", "code must be at most 30 characters").with_param("max", 30_i64));
         }
         // `name_required` (@required on Branch.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
@@ -76,39 +76,39 @@ impl backbone_core::write_guard::WriteGuard<Branch> for BranchRowRules {
         }
         // `name_max_length` (@max(150) on Branch.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(150.0_f64))) {
-            shadow.push(Violation::new("name", "max_length", "name must be at most 150 characters").with_param("max", 150_i64));
+            refuse.push(Violation::new("name", "max_length", "name must be at most 150 characters").with_param("max", 150_i64));
         }
         // `npwp_max_length` (@max(25) on Branch.npwp)
         if (create || (update && r::changed(old.as_ref(), row, &["npwp"]))) && !r::holds(&r::le(r::length(r::field(row, "npwp")), r::Val::Num(25.0_f64))) {
-            shadow.push(Violation::new("npwp", "max_length", "npwp must be at most 25 characters").with_param("max", 25_i64));
+            refuse.push(Violation::new("npwp", "max_length", "npwp must be at most 25 characters").with_param("max", 25_i64));
         }
         // `email_max_length` (@max(150) on Branch.email)
         if (create || (update && r::changed(old.as_ref(), row, &["email"]))) && !r::holds(&r::le(r::length(r::field(row, "email")), r::Val::Num(150.0_f64))) {
-            shadow.push(Violation::new("email", "max_length", "email must be at most 150 characters").with_param("max", 150_i64));
+            refuse.push(Violation::new("email", "max_length", "email must be at most 150 characters").with_param("max", 150_i64));
         }
         // `phone_max_length` (@max(30) on Branch.phone)
         if (create || (update && r::changed(old.as_ref(), row, &["phone"]))) && !r::holds(&r::le(r::length(r::field(row, "phone")), r::Val::Num(30.0_f64))) {
-            shadow.push(Violation::new("phone", "max_length", "phone must be at most 30 characters").with_param("max", 30_i64));
+            refuse.push(Violation::new("phone", "max_length", "phone must be at most 30 characters").with_param("max", 30_i64));
         }
         // `address_max_length` (@max(255) on Branch.address)
         if (create || (update && r::changed(old.as_ref(), row, &["address"]))) && !r::holds(&r::le(r::length(r::field(row, "address")), r::Val::Num(255.0_f64))) {
-            shadow.push(Violation::new("address", "max_length", "address must be at most 255 characters").with_param("max", 255_i64));
+            refuse.push(Violation::new("address", "max_length", "address must be at most 255 characters").with_param("max", 255_i64));
         }
         // `city_max_length` (@max(100) on Branch.city)
         if (create || (update && r::changed(old.as_ref(), row, &["city"]))) && !r::holds(&r::le(r::length(r::field(row, "city")), r::Val::Num(100.0_f64))) {
-            shadow.push(Violation::new("city", "max_length", "city must be at most 100 characters").with_param("max", 100_i64));
+            refuse.push(Violation::new("city", "max_length", "city must be at most 100 characters").with_param("max", 100_i64));
         }
         // `province_max_length` (@max(100) on Branch.province)
         if (create || (update && r::changed(old.as_ref(), row, &["province"]))) && !r::holds(&r::le(r::length(r::field(row, "province")), r::Val::Num(100.0_f64))) {
-            shadow.push(Violation::new("province", "max_length", "province must be at most 100 characters").with_param("max", 100_i64));
+            refuse.push(Violation::new("province", "max_length", "province must be at most 100 characters").with_param("max", 100_i64));
         }
         // `postal_code_max_length` (@max(10) on Branch.postal_code)
         if (create || (update && r::changed(old.as_ref(), row, &["postal_code"]))) && !r::holds(&r::le(r::length(r::field(row, "postal_code")), r::Val::Num(10.0_f64))) {
-            shadow.push(Violation::new("postal_code", "max_length", "postal_code must be at most 10 characters").with_param("max", 10_i64));
+            refuse.push(Violation::new("postal_code", "max_length", "postal_code must be at most 10 characters").with_param("max", 10_i64));
         }
         // `country_length` (@length(2) on Branch.country)
         if (create || (update && r::changed(old.as_ref(), row, &["country"]))) && !r::holds(&r::eq(r::length(r::field(row, "country")), r::Val::Num(2.0_f64))) {
-            shadow.push(Violation::new("country", "length", "country must be exactly 2 characters").with_param("length", 2_i64));
+            refuse.push(Violation::new("country", "length", "country must be exactly 2 characters").with_param("length", 2_i64));
         }
         GuardOutcome { refuse, shadow }
     }

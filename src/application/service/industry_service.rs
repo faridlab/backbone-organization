@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<Industry> for IndustryRowRules {
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `code_required` (@required on Industry.code)
         if (create || (update && r::changed(old.as_ref(), row, &["code"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "code")), r::not(r::is_empty(r::trim(r::field(row, "code")))))) {
@@ -64,11 +64,7 @@ impl backbone_core::write_guard::WriteGuard<Industry> for IndustryRowRules {
         }
         // `code_max_length` (@max(5) on Industry.code)
         if (create || (update && r::changed(old.as_ref(), row, &["code"]))) && !r::holds(&r::le(r::length(r::field(row, "code")), r::Val::Num(5.0_f64))) {
-            shadow.push(Violation::new("code", "max_length", "code must be at most 5 characters").with_param("max", 5_i64));
-        }
-        // `code_length` (@length(5) on Industry.code)
-        if (create || (update && r::changed(old.as_ref(), row, &["code"]))) && !r::holds(&r::eq(r::length(r::field(row, "code")), r::Val::Num(5.0_f64))) {
-            shadow.push(Violation::new("code", "length", "code must be exactly 5 characters").with_param("length", 5_i64));
+            refuse.push(Violation::new("code", "max_length", "code must be at most 5 characters").with_param("max", 5_i64));
         }
         // `name_required` (@required on Industry.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
@@ -76,7 +72,7 @@ impl backbone_core::write_guard::WriteGuard<Industry> for IndustryRowRules {
         }
         // `name_max_length` (@max(300) on Industry.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(300.0_f64))) {
-            shadow.push(Violation::new("name", "max_length", "name must be at most 300 characters").with_param("max", 300_i64));
+            refuse.push(Violation::new("name", "max_length", "name must be at most 300 characters").with_param("max", 300_i64));
         }
         GuardOutcome { refuse, shadow }
     }
