@@ -223,6 +223,9 @@ impl backbone_orm::EntityRepoMeta for OrgUnit {
     fn search_fields() -> &'static [&'static str] {
         &["name"]
     }
+    fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
+        &[("parent", "org_units", "parentId")]
+    }
 }
 
 /// Builder for OrgUnit entity
