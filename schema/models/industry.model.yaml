@@ -31,7 +31,7 @@ models:
       # KBLI 2020 leaf code (sub-class, 5 digits). The natural key.
       code:
         type: string
-        attributes: ["@required", "@max(5)", "@length(5)"]
+        attributes: ["@required", "@max(5)"]
         description: "KBLI 2020 5-digit code (sub-class)"
 
       name:
