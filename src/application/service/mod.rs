@@ -29,7 +29,13 @@ pub use position_service::PositionService;
 pub use structure_service::StructureService;
 pub use branch_service::BranchRowRules;
 pub use company_service::CompanyRowRules;
+pub use company_industry_service::CompanyIndustryRowRules;
 pub use department_service::DepartmentRowRules;
+pub use industry_service::IndustryRowRules;
+pub use level_service::LevelRowRules;
+pub use org_unit_service::OrgUnitRowRules;
+pub use position_service::PositionRowRules;
+pub use structure_service::StructureRowRules;
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

@@ -52,9 +52,6 @@ pub use application::service::OrgUnitService;
 pub use application::service::PositionService;
 pub use application::service::StructureService;
 
-// Re-exports - Validation
-pub use application::validator::{ValidationError, ValidationResult};
-
 // Re-exports - Workflows
 pub use application::workflows::*;
 
@@ -254,7 +251,7 @@ impl OrganizationModuleBuilder {
 
         // CompanyIndustry service
         let company_industry_repository = Arc::new(CompanyIndustryRepository::new(db_pool.clone()));
-        let company_industry_service = Arc::new(CompanyIndustryService::with_repository(company_industry_repository.clone()));
+        let company_industry_service = Arc::new(CompanyIndustryService::with_repository(company_industry_repository.clone()).with_guard(Arc::new(crate::application::service::CompanyIndustryRowRules)));
 
         // Department service
         let department_repository = Arc::new(DepartmentRepository::new(db_pool.clone()));
@@ -262,23 +259,23 @@ impl OrganizationModuleBuilder {
 
         // Industry service
         let industry_repository = Arc::new(IndustryRepository::new(db_pool.clone()));
-        let industry_service = Arc::new(IndustryService::with_repository(industry_repository.clone()));
+        let industry_service = Arc::new(IndustryService::with_repository(industry_repository.clone()).with_guard(Arc::new(crate::application::service::IndustryRowRules)));
 
         // Level service
         let level_repository = Arc::new(LevelRepository::new(db_pool.clone()));
-        let level_service = Arc::new(LevelService::with_repository(level_repository.clone()));
+        let level_service = Arc::new(LevelService::with_repository(level_repository.clone()).with_guard(Arc::new(crate::application::service::LevelRowRules)));
 
         // OrgUnit service
         let org_unit_repository = Arc::new(OrgUnitRepository::new(db_pool.clone()));
-        let org_unit_service = Arc::new(OrgUnitService::with_repository(org_unit_repository.clone()));
+        let org_unit_service = Arc::new(OrgUnitService::with_repository(org_unit_repository.clone()).with_guard(Arc::new(crate::application::service::OrgUnitRowRules)));
 
         // Position service
         let position_repository = Arc::new(PositionRepository::new(db_pool.clone()));
-        let position_service = Arc::new(PositionService::with_repository(position_repository.clone()));
+        let position_service = Arc::new(PositionService::with_repository(position_repository.clone()).with_guard(Arc::new(crate::application::service::PositionRowRules)));
 
         // Structure service
         let structure_repository = Arc::new(StructureRepository::new(db_pool.clone()));
-        let structure_service = Arc::new(StructureService::with_repository(structure_repository.clone()));
+        let structure_service = Arc::new(StructureService::with_repository(structure_repository.clone()).with_guard(Arc::new(crate::application::service::StructureRowRules)));
 
 
         // The extension builds its own state from what the generated build made.

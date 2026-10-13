@@ -32,9 +32,10 @@ pub type CompanyService = GenericCrudService<
     CompanyRepository,
 >;
 
-/// The row rules the schema declares for Company, checked against the row a create or
-/// update would store. The generated build attaches it to [`CompanyService`]. Every rule
-/// runs in shadow: a break is logged under `backbone::write_guard` and the write goes ahead.
+/// The rules the schema declares for Company, checked against the row a create or update
+/// would store. The generated build attaches it to [`CompanyService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
 pub struct CompanyRowRules;
 
 #[async_trait::async_trait]
@@ -56,11 +57,84 @@ impl backbone_core::write_guard::WriteGuard<Company> for CompanyRowRules {
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
         let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
         // `status` belongs to a state machine: only its verbs move it
         if update && ctx.transition.is_none() && r::changed(old.as_ref(), row, &["status"]) {
             shadow.push(Violation::new("status", "state_field_verbs_only", "the state field moves only through its verbs"));
         }
-        GuardOutcome { refuse: Vec::new(), shadow }
+        // `code_required` (@required on Company.code)
+        if (create || (update && r::changed(old.as_ref(), row, &["code"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "code")), r::not(r::is_empty(r::trim(r::field(row, "code")))))) {
+            refuse.push(Violation::new("code", "required", "code is required"));
+        }
+        // `code_max_length` (@max(30) on Company.code)
+        if (create || (update && r::changed(old.as_ref(), row, &["code"]))) && !r::holds(&r::le(r::length(r::field(row, "code")), r::Val::Num(30.0_f64))) {
+            shadow.push(Violation::new("code", "max_length", "code must be at most 30 characters").with_param("max", 30_i64));
+        }
+        // `legal_name_required` (@required on Company.legal_name)
+        if (create || (update && r::changed(old.as_ref(), row, &["legal_name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "legal_name")), r::not(r::is_empty(r::trim(r::field(row, "legal_name")))))) {
+            refuse.push(Violation::new("legal_name", "required", "legal_name is required"));
+        }
+        // `legal_name_max_length` (@max(200) on Company.legal_name)
+        if (create || (update && r::changed(old.as_ref(), row, &["legal_name"]))) && !r::holds(&r::le(r::length(r::field(row, "legal_name")), r::Val::Num(200.0_f64))) {
+            shadow.push(Violation::new("legal_name", "max_length", "legal_name must be at most 200 characters").with_param("max", 200_i64));
+        }
+        // `trade_name_max_length` (@max(200) on Company.trade_name)
+        if (create || (update && r::changed(old.as_ref(), row, &["trade_name"]))) && !r::holds(&r::le(r::length(r::field(row, "trade_name")), r::Val::Num(200.0_f64))) {
+            shadow.push(Violation::new("trade_name", "max_length", "trade_name must be at most 200 characters").with_param("max", 200_i64));
+        }
+        // `npwp_max_length` (@max(25) on Company.npwp)
+        if (create || (update && r::changed(old.as_ref(), row, &["npwp"]))) && !r::holds(&r::le(r::length(r::field(row, "npwp")), r::Val::Num(25.0_f64))) {
+            shadow.push(Violation::new("npwp", "max_length", "npwp must be at most 25 characters").with_param("max", 25_i64));
+        }
+        // `nib_max_length` (@max(30) on Company.nib)
+        if (create || (update && r::changed(old.as_ref(), row, &["nib"]))) && !r::holds(&r::le(r::length(r::field(row, "nib")), r::Val::Num(30.0_f64))) {
+            shadow.push(Violation::new("nib", "max_length", "nib must be at most 30 characters").with_param("max", 30_i64));
+        }
+        // `base_currency_length` (@length(3) on Company.base_currency)
+        if (create || (update && r::changed(old.as_ref(), row, &["base_currency"]))) && !r::holds(&r::eq(r::length(r::field(row, "base_currency")), r::Val::Num(3.0_f64))) {
+            shadow.push(Violation::new("base_currency", "length", "base_currency must be exactly 3 characters").with_param("length", 3_i64));
+        }
+        // `fiscal_year_start_month_min` (@min(1) on Company.fiscal_year_start_month)
+        if (create || (update && r::changed(old.as_ref(), row, &["fiscal_year_start_month"]))) && !r::holds(&r::ge(r::field(row, "fiscal_year_start_month"), r::Val::Num(1.0_f64))) {
+            shadow.push(Violation::new("fiscal_year_start_month", "min", "fiscal_year_start_month must be at least 1").with_param("min", 1_i64));
+        }
+        // `fiscal_year_start_month_max` (@max(12) on Company.fiscal_year_start_month)
+        if (create || (update && r::changed(old.as_ref(), row, &["fiscal_year_start_month"]))) && !r::holds(&r::le(r::field(row, "fiscal_year_start_month"), r::Val::Num(12.0_f64))) {
+            shadow.push(Violation::new("fiscal_year_start_month", "max", "fiscal_year_start_month must be at most 12").with_param("max", 12_i64));
+        }
+        // `email_max_length` (@max(150) on Company.email)
+        if (create || (update && r::changed(old.as_ref(), row, &["email"]))) && !r::holds(&r::le(r::length(r::field(row, "email")), r::Val::Num(150.0_f64))) {
+            shadow.push(Violation::new("email", "max_length", "email must be at most 150 characters").with_param("max", 150_i64));
+        }
+        // `phone_max_length` (@max(30) on Company.phone)
+        if (create || (update && r::changed(old.as_ref(), row, &["phone"]))) && !r::holds(&r::le(r::length(r::field(row, "phone")), r::Val::Num(30.0_f64))) {
+            shadow.push(Violation::new("phone", "max_length", "phone must be at most 30 characters").with_param("max", 30_i64));
+        }
+        // `address_max_length` (@max(255) on Company.address)
+        if (create || (update && r::changed(old.as_ref(), row, &["address"]))) && !r::holds(&r::le(r::length(r::field(row, "address")), r::Val::Num(255.0_f64))) {
+            shadow.push(Violation::new("address", "max_length", "address must be at most 255 characters").with_param("max", 255_i64));
+        }
+        // `city_max_length` (@max(100) on Company.city)
+        if (create || (update && r::changed(old.as_ref(), row, &["city"]))) && !r::holds(&r::le(r::length(r::field(row, "city")), r::Val::Num(100.0_f64))) {
+            shadow.push(Violation::new("city", "max_length", "city must be at most 100 characters").with_param("max", 100_i64));
+        }
+        // `province_max_length` (@max(100) on Company.province)
+        if (create || (update && r::changed(old.as_ref(), row, &["province"]))) && !r::holds(&r::le(r::length(r::field(row, "province")), r::Val::Num(100.0_f64))) {
+            shadow.push(Violation::new("province", "max_length", "province must be at most 100 characters").with_param("max", 100_i64));
+        }
+        // `postal_code_max_length` (@max(10) on Company.postal_code)
+        if (create || (update && r::changed(old.as_ref(), row, &["postal_code"]))) && !r::holds(&r::le(r::length(r::field(row, "postal_code")), r::Val::Num(10.0_f64))) {
+            shadow.push(Violation::new("postal_code", "max_length", "postal_code must be at most 10 characters").with_param("max", 10_i64));
+        }
+        // `country_length` (@length(2) on Company.country)
+        if (create || (update && r::changed(old.as_ref(), row, &["country"]))) && !r::holds(&r::eq(r::length(r::field(row, "country")), r::Val::Num(2.0_f64))) {
+            shadow.push(Violation::new("country", "length", "country must be exactly 2 characters").with_param("length", 2_i64));
+        }
+        // `notes_max_length` (@max(1000) on Company.notes)
+        if (create || (update && r::changed(old.as_ref(), row, &["notes"]))) && !r::holds(&r::le(r::length(r::field(row, "notes")), r::Val::Num(1000.0_f64))) {
+            shadow.push(Violation::new("notes", "max_length", "notes must be at most 1000 characters").with_param("max", 1000_i64));
+        }
+        GuardOutcome { refuse, shadow }
     }
 }
 

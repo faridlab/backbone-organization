@@ -32,9 +32,10 @@ pub type DepartmentService = GenericCrudService<
     DepartmentRepository,
 >;
 
-/// The row rules the schema declares for Department, checked against the row a create or
-/// update would store. The generated build attaches it to [`DepartmentService`]. Every rule
-/// runs in shadow: a break is logged under `backbone::write_guard` and the write goes ahead.
+/// The rules the schema declares for Department, checked against the row a create or update
+/// would store. The generated build attaches it to [`DepartmentService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
 pub struct DepartmentRowRules;
 
 #[async_trait::async_trait]
@@ -56,11 +57,32 @@ impl backbone_core::write_guard::WriteGuard<Department> for DepartmentRowRules {
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
         let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
         // `status` belongs to a state machine: only its verbs move it
         if update && ctx.transition.is_none() && r::changed(old.as_ref(), row, &["status"]) {
             shadow.push(Violation::new("status", "state_field_verbs_only", "the state field moves only through its verbs"));
         }
-        GuardOutcome { refuse: Vec::new(), shadow }
+        // `code_required` (@required on Department.code)
+        if (create || (update && r::changed(old.as_ref(), row, &["code"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "code")), r::not(r::is_empty(r::trim(r::field(row, "code")))))) {
+            refuse.push(Violation::new("code", "required", "code is required"));
+        }
+        // `code_max_length` (@max(30) on Department.code)
+        if (create || (update && r::changed(old.as_ref(), row, &["code"]))) && !r::holds(&r::le(r::length(r::field(row, "code")), r::Val::Num(30.0_f64))) {
+            shadow.push(Violation::new("code", "max_length", "code must be at most 30 characters").with_param("max", 30_i64));
+        }
+        // `name_required` (@required on Department.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
+            refuse.push(Violation::new("name", "required", "name is required"));
+        }
+        // `name_max_length` (@max(150) on Department.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(150.0_f64))) {
+            shadow.push(Violation::new("name", "max_length", "name must be at most 150 characters").with_param("max", 150_i64));
+        }
+        // `level_non_negative` (@non_negative on Department.level)
+        if (create || (update && r::changed(old.as_ref(), row, &["level"]))) && !r::holds(&r::ge(r::field(row, "level"), r::Val::Num(0.0_f64))) {
+            shadow.push(Violation::new("level", "non_negative", "level must not be negative"));
+        }
+        GuardOutcome { refuse, shadow }
     }
 }
 
