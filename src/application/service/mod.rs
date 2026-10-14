@@ -37,5 +37,77 @@ pub use org_unit_service::OrgUnitRowRules;
 pub use position_service::PositionRowRules;
 pub use structure_service::StructureRowRules;
 
+/// A `BranchService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_branch_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::BranchRepository>,
+) -> BranchService {
+    BranchService::with_repository(repository).with_guard(std::sync::Arc::new(BranchRowRules))
+}
+
+/// A `CompanyService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_company_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::CompanyRepository>,
+) -> CompanyService {
+    CompanyService::with_repository(repository).with_guard(std::sync::Arc::new(CompanyRowRules))
+}
+
+/// A `CompanyIndustryService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_company_industry_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::CompanyIndustryRepository>,
+) -> CompanyIndustryService {
+    CompanyIndustryService::with_repository(repository).with_guard(std::sync::Arc::new(CompanyIndustryRowRules))
+}
+
+/// A `DepartmentService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_department_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::DepartmentRepository>,
+) -> DepartmentService {
+    DepartmentService::with_repository(repository).with_guard(std::sync::Arc::new(DepartmentRowRules))
+}
+
+/// A `IndustryService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_industry_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::IndustryRepository>,
+) -> IndustryService {
+    IndustryService::with_repository(repository).with_guard(std::sync::Arc::new(IndustryRowRules))
+}
+
+/// A `LevelService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_level_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::LevelRepository>,
+) -> LevelService {
+    LevelService::with_repository(repository).with_guard(std::sync::Arc::new(LevelRowRules))
+}
+
+/// A `OrgUnitService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_org_unit_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::OrgUnitRepository>,
+) -> OrgUnitService {
+    OrgUnitService::with_repository(repository).with_guard(std::sync::Arc::new(OrgUnitRowRules))
+}
+
+/// A `PositionService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_position_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::PositionRepository>,
+) -> PositionService {
+    PositionService::with_repository(repository).with_guard(std::sync::Arc::new(PositionRowRules))
+}
+
+/// A `StructureService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_structure_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::StructureRepository>,
+) -> StructureService {
+    StructureService::with_repository(repository).with_guard(std::sync::Arc::new(StructureRowRules))
+}
+
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

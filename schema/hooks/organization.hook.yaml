@@ -130,16 +130,4 @@ rules:
 # company_id payloads are REGISTRY IDENTITY (the company's own id), never a
 # tenant axis on scoped rows (ADR-0029).
 # -----------------------------------------------------------------------------
-events:
-  CompanyOnboarded:
-    when: "onboarding succeeds"
-    payload: [company_id, hq_branch_id, code]
-  BranchAdded:
-    when: "a branch is created"
-    payload: [parent_unit_id, branch_id, is_head_office]
-  DepartmentAdded:
-    when: "a department is created"
-    payload: [department_id, branch_id]
-  CompanyStatusChanged:
-    when: "company status transitions"
-    payload: [company_id, from, to]
+events: {}
