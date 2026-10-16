@@ -47,7 +47,6 @@ pub struct CreateDepartmentDto {
     #[cfg_attr(feature = "openapi", schema(example = 42))]
     #[serde(alias = "sort_order")]
     pub sort_order: i32,
-    pub status: OrgStatus,
 }
 
 // =============================================================================
@@ -265,7 +264,7 @@ impl From<CreateDepartmentDto> for Department {
             branch_id: dto.branch_id,
             manager_id: dto.manager_id,
             sort_order: dto.sort_order,
-            status: dto.status,
+            status: OrgStatus::Active,
             metadata: AuditMetadata::default(),
         }
     }

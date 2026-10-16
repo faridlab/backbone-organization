@@ -55,7 +55,6 @@ pub struct CreateBranchDto {
     pub postal_code: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub country: String,
-    pub status: OrgStatus,
 }
 
 // =============================================================================
@@ -298,7 +297,7 @@ impl From<CreateBranchDto> for Branch {
             province: dto.province,
             postal_code: dto.postal_code,
             country: dto.country,
-            status: dto.status,
+            status: OrgStatus::Active,
             metadata: AuditMetadata::default(),
         }
     }

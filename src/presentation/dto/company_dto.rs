@@ -66,7 +66,6 @@ pub struct CreateCompanyDto {
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(alias = "is_default")]
     pub is_default: bool,
-    pub status: CompanyStatus,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
 }
@@ -352,7 +351,7 @@ impl From<CreateCompanyDto> for Company {
             postal_code: dto.postal_code,
             country: dto.country,
             is_default: dto.is_default,
-            status: dto.status,
+            status: CompanyStatus::Active,
             notes: dto.notes,
             metadata: AuditMetadata::default(),
         }
