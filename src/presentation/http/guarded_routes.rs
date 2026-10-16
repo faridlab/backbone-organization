@@ -189,7 +189,7 @@ fn create_org_write_routes(svc: Arc<OrgWriteService>) -> Router {
     Router::new()
         .route("/branches", post(create_branch))
         .route("/departments", post(create_department))
-        .route("/departments/{id}/repoint", post(repoint_department))
+        .route("/departments/:id/repoint", post(repoint_department))
         // Bare of auth by design: the composing service's org scope middleware wraps this router,
         // so a handler only ever runs with a proven principal AND a bound org scope. An unknown
         // acting unit never reaches a handler — the org guard resolves the unit against the
@@ -243,4 +243,30 @@ pub fn create_guarded_organization_routes(m: &OrganizationModule) -> Router {
         // fallback. Applied AFTER the routes — a Router layer only wraps what was registered
         // before the call.
         .layer(axum::middleware::from_fn(crate::request_pool::bind_request_pool))
+}
+
+#[cfg(test)]
+mod route_match_tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use tower::ServiceExt;
+
+    /// A pool that never connects: a matched route reaches its handler and fails on the database,
+    /// an unmatched one answers 404 before any handler runs.
+    fn lazy_pool() -> sqlx::PgPool {
+        sqlx::postgres::PgPoolOptions::new()
+            .acquire_timeout(std::time::Duration::from_secs(1))
+            .connect_lazy("postgres://nobody@127.0.0.1:1/none")
+            .expect("a lazy pool")
+    }
+
+    #[tokio::test]
+    async fn the_repoint_route_matches_a_department_id() {
+        let app = create_org_write_routes(Arc::new(OrgWriteService::new(lazy_pool())));
+        let uri = format!("/departments/{}/repoint", uuid::Uuid::new_v4());
+        let req = Request::post(uri).header("content-type", "application/json").body(Body::from("{}")).unwrap();
+        let res = app.oneshot(req).await.unwrap();
+        assert_ne!(res.status(), StatusCode::NOT_FOUND, "axum 0.7 names a parameter :id; a brace is a literal segment");
+    }
 }

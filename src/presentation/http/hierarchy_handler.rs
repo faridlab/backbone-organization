@@ -158,6 +158,31 @@ async fn company_hierarchy(
 /// Hierarchy read route. Merge onto a guarded/read composition.
 pub fn create_hierarchy_routes(service: Arc<HierarchyService>) -> Router {
     Router::new()
-        .route("/companies/{id}/hierarchy", get(company_hierarchy))
+        .route("/companies/:id/hierarchy", get(company_hierarchy))
         .with_state(service)
+}
+
+#[cfg(test)]
+mod route_match_tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use tower::ServiceExt;
+
+    /// A pool that never connects: a matched route reaches its handler and fails on the database,
+    /// an unmatched one answers 404 before any handler runs.
+    fn lazy_pool() -> sqlx::PgPool {
+        sqlx::postgres::PgPoolOptions::new()
+            .acquire_timeout(std::time::Duration::from_secs(1))
+            .connect_lazy("postgres://nobody@127.0.0.1:1/none")
+            .expect("a lazy pool")
+    }
+
+    #[tokio::test]
+    async fn the_hierarchy_route_matches_a_company_id() {
+        let app = create_hierarchy_routes(Arc::new(HierarchyService::new(lazy_pool())));
+        let uri = format!("/companies/{}/hierarchy", uuid::Uuid::new_v4());
+        let res = app.oneshot(Request::get(uri).body(Body::empty()).unwrap()).await.unwrap();
+        assert_ne!(res.status(), StatusCode::NOT_FOUND, "axum 0.7 names a parameter :id; a brace is a literal segment");
+    }
 }
