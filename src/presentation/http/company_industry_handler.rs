@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for CompanyIndustryError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `company_industry:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn company_industry_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("company_industry")
+        .in_module("organization")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for CompanyIndustry.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for CompanyIndustryError {
 /// let router = create_company_industry_routes(service);
 /// ```
 pub fn create_company_industry_routes(service: Arc<CompanyIndustryService>) -> Router {
-    BackboneCrudHandler::<CompanyIndustryService, CompanyIndustry, CreateCompanyIndustryDto, UpdateCompanyIndustryDto, CompanyIndustryResponseDto>::routes(
+    BackboneCrudHandler::<CompanyIndustryService, CompanyIndustry, CreateCompanyIndustryDto, UpdateCompanyIndustryDto, CompanyIndustryResponseDto>::routes_guarded(
         service,
         "/company_industries",
+        company_industry_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for CompanyIndustry.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_company_industry_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_company_industry_read_routes(service: Arc<CompanyIndustryService>) -> Router {
-    BackboneCrudHandler::<CompanyIndustryService, CompanyIndustry, CreateCompanyIndustryDto, UpdateCompanyIndustryDto, CompanyIndustryResponseDto>::read_routes(
+    BackboneCrudHandler::<CompanyIndustryService, CompanyIndustry, CreateCompanyIndustryDto, UpdateCompanyIndustryDto, CompanyIndustryResponseDto>::read_routes_guarded(
         service,
         "/company_industries",
+        company_industry_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_company_industry_read_routes(service: Arc<CompanyIndustryService>)
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_company_industry_write_routes(service: Arc<CompanyIndustryService>) -> Router {
-    BackboneCrudHandler::<CompanyIndustryService, CompanyIndustry, CreateCompanyIndustryDto, UpdateCompanyIndustryDto, CompanyIndustryResponseDto>::write_routes(
+    BackboneCrudHandler::<CompanyIndustryService, CompanyIndustry, CreateCompanyIndustryDto, UpdateCompanyIndustryDto, CompanyIndustryResponseDto>::write_routes_guarded(
         service,
         "/company_industries",
+        company_industry_permissions(),
     )
 }
 

@@ -34,10 +34,10 @@ pub struct CreateBranchDto {
     pub code: String,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
-    #[serde(alias = "branch_type")]
+    #[serde(default = "default_create_branch_branch_type", alias = "branch_type")]
     pub branch_type: BranchType,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_head_office")]
+    #[serde(default, alias = "is_head_office")]
     pub is_head_office: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub npwp: Option<String>,
@@ -54,7 +54,16 @@ pub struct CreateBranchDto {
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "postal_code")]
     pub postal_code: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
+    #[serde(default = "default_create_branch_country")]
     pub country: String,
+}
+
+fn default_create_branch_branch_type() -> BranchType {
+    BranchType::Branch
+}
+
+fn default_create_branch_country() -> String {
+    "ID".to_string()
 }
 
 // =============================================================================
@@ -120,20 +129,20 @@ pub struct PatchBranchDto {
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "is_head_office")]
     pub is_head_office: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub npwp: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub email: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub address: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub city: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub province: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "postal_code")]
-    pub postal_code: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub npwp: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub email: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub phone: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub address: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub city: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub province: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "postal_code")]
+    pub postal_code: Option<Option<String>>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
@@ -349,12 +358,4 @@ impl backbone_core::ApplyUpdateDto<UpdateBranchDto> for Branch {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Branch here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

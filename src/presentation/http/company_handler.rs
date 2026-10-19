@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for CompanyError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `company:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn company_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("company")
+        .in_module("organization")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for Company.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for CompanyError {
 /// let router = create_company_routes(service);
 /// ```
 pub fn create_company_routes(service: Arc<CompanyService>) -> Router {
-    BackboneCrudHandler::<CompanyService, Company, CreateCompanyDto, UpdateCompanyDto, CompanyResponseDto>::routes(
+    BackboneCrudHandler::<CompanyService, Company, CreateCompanyDto, UpdateCompanyDto, CompanyResponseDto>::routes_guarded(
         service,
         "/companies",
+        company_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for Company.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_company_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_company_read_routes(service: Arc<CompanyService>) -> Router {
-    BackboneCrudHandler::<CompanyService, Company, CreateCompanyDto, UpdateCompanyDto, CompanyResponseDto>::read_routes(
+    BackboneCrudHandler::<CompanyService, Company, CreateCompanyDto, UpdateCompanyDto, CompanyResponseDto>::read_routes_guarded(
         service,
         "/companies",
+        company_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_company_read_routes(service: Arc<CompanyService>) -> Router {
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_company_write_routes(service: Arc<CompanyService>) -> Router {
-    BackboneCrudHandler::<CompanyService, Company, CreateCompanyDto, UpdateCompanyDto, CompanyResponseDto>::write_routes(
+    BackboneCrudHandler::<CompanyService, Company, CreateCompanyDto, UpdateCompanyDto, CompanyResponseDto>::write_routes_guarded(
         service,
         "/companies",
+        company_permissions(),
     )
 }
 

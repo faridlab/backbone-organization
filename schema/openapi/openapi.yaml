@@ -3405,11 +3405,6 @@ components:
       required:
         - code
         - name
-        - branch_type
-        - is_head_office
-        - country
-        - status
-        - metadata
       properties:
         code:
           type: string
@@ -3451,10 +3446,6 @@ components:
           maxLength: 10
         country:
           type: string
-        status:
-          type: string
-        metadata:
-          type: object
 
     UpdateBranchRequest:
       type: object
@@ -3465,7 +3456,6 @@ components:
         - is_head_office
         - country
         - status
-        - metadata
       properties:
         code:
           type: string
@@ -3509,8 +3499,6 @@ components:
           type: string
         status:
           type: string
-        metadata:
-          type: object
 
     PatchBranchRequest:
       type: object
@@ -3557,8 +3545,6 @@ components:
           type: string
         status:
           type: string
-        metadata:
-          type: object
 
     BranchList:
       type: object
@@ -3669,13 +3655,6 @@ components:
       required:
         - code
         - legal_name
-        - entity_type
-        - base_currency
-        - fiscal_year_start_month
-        - country
-        - is_default
-        - status
-        - metadata
       properties:
         code:
           type: string
@@ -3732,14 +3711,10 @@ components:
           type: string
         is_default:
           type: boolean
-        status:
-          type: string
         notes:
           nullable: true
           type: string
           maxLength: 1000
-        metadata:
-          type: object
 
     UpdateCompanyRequest:
       type: object
@@ -3752,7 +3727,6 @@ components:
         - country
         - is_default
         - status
-        - metadata
       properties:
         code:
           type: string
@@ -3815,8 +3789,6 @@ components:
           nullable: true
           type: string
           maxLength: 1000
-        metadata:
-          type: object
 
     PatchCompanyRequest:
       type: object
@@ -3882,8 +3854,6 @@ components:
           nullable: true
           type: string
           maxLength: 1000
-        metadata:
-          type: object
 
     CompanyList:
       type: object
@@ -3931,31 +3901,24 @@ components:
       type: object
       required:
         - industry_id
-        - is_primary
-        - metadata
       properties:
         industry_id:
           type: string
           format: uuid
         is_primary:
           type: boolean
-        metadata:
-          type: object
 
     UpdateCompanyIndustryRequest:
       type: object
       required:
         - industry_id
         - is_primary
-        - metadata
       properties:
         industry_id:
           type: string
           format: uuid
         is_primary:
           type: boolean
-        metadata:
-          type: object
 
     PatchCompanyIndustryRequest:
       type: object
@@ -3965,8 +3928,6 @@ components:
           format: uuid
         is_primary:
           type: boolean
-        metadata:
-          type: object
 
     CompanyIndustryList:
       type: object
@@ -4042,11 +4003,6 @@ components:
       required:
         - code
         - name
-        - level
-        - is_group
-        - sort_order
-        - status
-        - metadata
       properties:
         code:
           type: string
@@ -4074,10 +4030,6 @@ components:
         sort_order:
           type: integer
           format: int32
-        status:
-          type: string
-        metadata:
-          type: object
 
     UpdateDepartmentRequest:
       type: object
@@ -4088,7 +4040,6 @@ components:
         - is_group
         - sort_order
         - status
-        - metadata
       properties:
         code:
           type: string
@@ -4118,8 +4069,6 @@ components:
           format: int32
         status:
           type: string
-        metadata:
-          type: object
 
     PatchDepartmentRequest:
       type: object
@@ -4152,8 +4101,6 @@ components:
           format: int32
         status:
           type: string
-        metadata:
-          type: object
 
     DepartmentList:
       type: object
@@ -4214,8 +4161,6 @@ components:
         - code
         - name
         - sector
-        - status
-        - metadata
       properties:
         code:
           type: string
@@ -4231,8 +4176,6 @@ components:
           format: uuid
         status:
           type: string
-        metadata:
-          type: object
 
     UpdateIndustryRequest:
       type: object
@@ -4241,7 +4184,6 @@ components:
         - name
         - sector
         - status
-        - metadata
       properties:
         code:
           type: string
@@ -4257,8 +4199,6 @@ components:
           format: uuid
         status:
           type: string
-        metadata:
-          type: object
 
     PatchIndustryRequest:
       type: object
@@ -4277,8 +4217,6 @@ components:
           format: uuid
         status:
           type: string
-        metadata:
-          type: object
 
     IndustryList:
       type: object
@@ -4331,7 +4269,6 @@ components:
       type: object
       required:
         - name
-        - metadata
       properties:
         name:
           type: string
@@ -4344,14 +4281,11 @@ components:
           nullable: true
           type: integer
           format: int32
-        metadata:
-          type: object
 
     UpdateLevelRequest:
       type: object
       required:
         - name
-        - metadata
       properties:
         name:
           type: string
@@ -4364,8 +4298,6 @@ components:
           nullable: true
           type: integer
           format: int32
-        metadata:
-          type: object
 
     PatchLevelRequest:
       type: object
@@ -4381,8 +4313,6 @@ components:
           nullable: true
           type: integer
           format: int32
-        metadata:
-          type: object
 
     LevelList:
       type: object
@@ -4439,7 +4369,6 @@ components:
       required:
         - kind
         - name
-        - metadata
       properties:
         kind:
           type: string
@@ -4454,15 +4383,12 @@ components:
         name:
           type: string
           maxLength: 200
-        metadata:
-          type: object
 
     UpdateOrgUnitRequest:
       type: object
       required:
         - kind
         - name
-        - metadata
       properties:
         kind:
           type: string
@@ -4477,8 +4403,6 @@ components:
         name:
           type: string
           maxLength: 200
-        metadata:
-          type: object
 
     PatchOrgUnitRequest:
       type: object
@@ -4496,8 +4420,6 @@ components:
         name:
           type: string
           maxLength: 200
-        metadata:
-          type: object
 
     OrgUnitList:
       type: object
@@ -4550,7 +4472,6 @@ components:
       type: object
       required:
         - name
-        - metadata
       properties:
         name:
           type: string
@@ -4563,14 +4484,11 @@ components:
           nullable: true
           type: string
           maxLength: 1000
-        metadata:
-          type: object
 
     UpdatePositionRequest:
       type: object
       required:
         - name
-        - metadata
       properties:
         name:
           type: string
@@ -4583,8 +4501,6 @@ components:
           nullable: true
           type: string
           maxLength: 1000
-        metadata:
-          type: object
 
     PatchPositionRequest:
       type: object
@@ -4600,8 +4516,6 @@ components:
           nullable: true
           type: string
           maxLength: 1000
-        metadata:
-          type: object
 
     PositionList:
       type: object
@@ -4654,7 +4568,6 @@ components:
       type: object
       required:
         - name
-        - metadata
       properties:
         name:
           type: string
@@ -4667,14 +4580,11 @@ components:
           nullable: true
           type: string
           format: uuid
-        metadata:
-          type: object
 
     UpdateStructureRequest:
       type: object
       required:
         - name
-        - metadata
       properties:
         name:
           type: string
@@ -4687,8 +4597,6 @@ components:
           nullable: true
           type: string
           format: uuid
-        metadata:
-          type: object
 
     PatchStructureRequest:
       type: object
@@ -4704,8 +4612,6 @@ components:
           nullable: true
           type: string
           format: uuid
-        metadata:
-          type: object
 
     StructureList:
       type: object

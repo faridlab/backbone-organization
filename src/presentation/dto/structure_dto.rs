@@ -71,10 +71,10 @@ pub struct PatchStructureDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "parent_id")]
-    pub parent_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "manager_id")]
-    pub manager_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "parent_id")]
+    pub parent_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "manager_id")]
+    pub manager_id: Option<Option<Uuid>>,
 }
 
 impl PatchStructureDto {
@@ -232,12 +232,4 @@ impl backbone_core::ApplyUpdateDto<UpdateStructureDto> for Structure {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Structure here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

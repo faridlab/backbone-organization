@@ -265,6 +265,9 @@ impl super::Entity for Branch {
 }
 
 impl backbone_core::PersistentEntity for Branch {
+    fn state_fields() -> &'static [&'static str] {
+        &["status"]
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

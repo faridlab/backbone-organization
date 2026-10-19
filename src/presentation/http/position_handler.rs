@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for PositionError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `position:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn position_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("position")
+        .in_module("organization")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for Position.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for PositionError {
 /// let router = create_position_routes(service);
 /// ```
 pub fn create_position_routes(service: Arc<PositionService>) -> Router {
-    BackboneCrudHandler::<PositionService, Position, CreatePositionDto, UpdatePositionDto, PositionResponseDto>::routes(
+    BackboneCrudHandler::<PositionService, Position, CreatePositionDto, UpdatePositionDto, PositionResponseDto>::routes_guarded(
         service,
         "/positions",
+        position_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for Position.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_position_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_position_read_routes(service: Arc<PositionService>) -> Router {
-    BackboneCrudHandler::<PositionService, Position, CreatePositionDto, UpdatePositionDto, PositionResponseDto>::read_routes(
+    BackboneCrudHandler::<PositionService, Position, CreatePositionDto, UpdatePositionDto, PositionResponseDto>::read_routes_guarded(
         service,
         "/positions",
+        position_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_position_read_routes(service: Arc<PositionService>) -> Router {
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_position_write_routes(service: Arc<PositionService>) -> Router {
-    BackboneCrudHandler::<PositionService, Position, CreatePositionDto, UpdatePositionDto, PositionResponseDto>::write_routes(
+    BackboneCrudHandler::<PositionService, Position, CreatePositionDto, UpdatePositionDto, PositionResponseDto>::write_routes_guarded(
         service,
         "/positions",
+        position_permissions(),
     )
 }
 

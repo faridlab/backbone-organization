@@ -41,13 +41,13 @@ pub struct CreateCompanyDto {
     pub npwp: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub nib: Option<String>,
-    #[serde(alias = "entity_type")]
+    #[serde(default = "default_create_company_entity_type", alias = "entity_type")]
     pub entity_type: CompanyEntityType,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
-    #[serde(alias = "base_currency")]
+    #[serde(default = "default_create_company_base_currency", alias = "base_currency")]
     pub base_currency: String,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
-    #[serde(alias = "fiscal_year_start_month")]
+    #[serde(default = "default_create_company_fiscal_year_start_month", alias = "fiscal_year_start_month")]
     pub fiscal_year_start_month: i32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
@@ -62,12 +62,29 @@ pub struct CreateCompanyDto {
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "postal_code")]
     pub postal_code: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
+    #[serde(default = "default_create_company_country")]
     pub country: String,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_default")]
+    #[serde(default, alias = "is_default")]
     pub is_default: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
+}
+
+fn default_create_company_entity_type() -> CompanyEntityType {
+    CompanyEntityType::Pt
+}
+
+fn default_create_company_base_currency() -> String {
+    "IDR".to_string()
+}
+
+fn default_create_company_fiscal_year_start_month() -> i32 {
+    1
+}
+
+fn default_create_company_country() -> String {
+    "ID".to_string()
 }
 
 // =============================================================================
@@ -141,12 +158,12 @@ pub struct PatchCompanyDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "legal_name")]
     pub legal_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "trade_name")]
-    pub trade_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub npwp: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nib: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "trade_name")]
+    pub trade_name: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub npwp: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub nib: Option<Option<String>>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "entity_type")]
     pub entity_type: Option<CompanyEntityType>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
@@ -155,18 +172,18 @@ pub struct PatchCompanyDto {
     #[cfg_attr(feature = "openapi", schema(example = 42))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "fiscal_year_start_month")]
     pub fiscal_year_start_month: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub email: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub address: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub city: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub province: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "postal_code")]
-    pub postal_code: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub email: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub phone: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub address: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub city: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub province: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "postal_code")]
+    pub postal_code: Option<Option<String>>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
@@ -175,8 +192,8 @@ pub struct PatchCompanyDto {
     pub is_default: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<CompanyStatus>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub notes: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub notes: Option<Option<String>>,
 }
 
 impl PatchCompanyDto {
@@ -414,12 +431,4 @@ impl backbone_core::ApplyUpdateDto<UpdateCompanyDto> for Company {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Company here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

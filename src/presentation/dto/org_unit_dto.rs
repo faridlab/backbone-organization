@@ -73,10 +73,10 @@ pub struct UpdateOrgUnitDto {
 pub struct PatchOrgUnitDto {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<OrgUnitKind>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "parent_id")]
-    pub parent_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub code: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "parent_id")]
+    pub parent_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub code: Option<Option<String>>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -242,12 +242,4 @@ impl backbone_core::ApplyUpdateDto<UpdateOrgUnitDto> for OrgUnit {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to OrgUnit here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

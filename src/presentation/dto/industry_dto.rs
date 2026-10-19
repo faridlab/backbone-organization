@@ -37,7 +37,12 @@ pub struct CreateIndustryDto {
     pub sector: KBLISector,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "parent_id")]
     pub parent_id: Option<Uuid>,
+    #[serde(default = "default_create_industry_status")]
     pub status: OrgStatus,
+}
+
+fn default_create_industry_status() -> OrgStatus {
+    OrgStatus::Active
 }
 
 // =============================================================================
@@ -82,8 +87,8 @@ pub struct PatchIndustryDto {
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sector: Option<KBLISector>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "parent_id")]
-    pub parent_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "parent_id")]
+    pub parent_id: Option<Option<Uuid>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<OrgStatus>,
 }
@@ -254,12 +259,4 @@ impl backbone_core::ApplyUpdateDto<UpdateIndustryDto> for Industry {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Industry here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

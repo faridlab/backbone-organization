@@ -17,15 +17,15 @@ pub mod structure_handler;
 
 
 // Re-exports
-pub use branch_handler::{create_branch_routes, create_branch_read_routes, create_branch_write_routes};
-pub use company_handler::{create_company_routes, create_company_read_routes, create_company_write_routes};
-pub use company_industry_handler::{create_company_industry_routes, create_company_industry_read_routes, create_company_industry_write_routes};
-pub use department_handler::{create_department_routes, create_department_read_routes, create_department_write_routes};
-pub use industry_handler::{create_industry_routes, create_industry_read_routes, create_industry_write_routes};
-pub use level_handler::{create_level_routes, create_level_read_routes, create_level_write_routes};
-pub use org_unit_handler::{create_org_unit_routes, create_org_unit_read_routes, create_org_unit_write_routes};
-pub use position_handler::{create_position_routes, create_position_read_routes, create_position_write_routes};
-pub use structure_handler::{create_structure_routes, create_structure_read_routes, create_structure_write_routes};
+pub use branch_handler::{create_branch_routes, create_branch_read_routes, create_branch_write_routes, branch_permissions};
+pub use company_handler::{create_company_routes, create_company_read_routes, create_company_write_routes, company_permissions};
+pub use company_industry_handler::{create_company_industry_routes, create_company_industry_read_routes, create_company_industry_write_routes, company_industry_permissions};
+pub use department_handler::{create_department_routes, create_department_read_routes, create_department_write_routes, department_permissions};
+pub use industry_handler::{create_industry_routes, create_industry_read_routes, create_industry_write_routes, industry_permissions};
+pub use level_handler::{create_level_routes, create_level_read_routes, create_level_write_routes, level_permissions};
+pub use org_unit_handler::{create_org_unit_routes, create_org_unit_read_routes, create_org_unit_write_routes, org_unit_permissions};
+pub use position_handler::{create_position_routes, create_position_read_routes, create_position_write_routes, position_permissions};
+pub use structure_handler::{create_structure_routes, create_structure_read_routes, create_structure_write_routes, structure_permissions};
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

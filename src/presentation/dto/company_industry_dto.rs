@@ -32,7 +32,7 @@ pub struct CreateCompanyIndustryDto {
     #[serde(alias = "industry_id")]
     pub industry_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_primary")]
+    #[serde(default, alias = "is_primary")]
     pub is_primary: bool,
 }
 
@@ -225,12 +225,4 @@ impl backbone_core::ApplyUpdateDto<UpdateCompanyIndustryDto> for CompanyIndustry
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to CompanyIndustry here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

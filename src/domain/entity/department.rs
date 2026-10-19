@@ -220,6 +220,16 @@ impl super::Entity for Department {
 }
 
 impl backbone_core::PersistentEntity for Department {
+    fn state_fields() -> &'static [&'static str] {
+        &["status"]
+    }
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("parent_id", "organization.departments", "id"),
+            backbone_core::Reference::new("branch_id", "organization.branches", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

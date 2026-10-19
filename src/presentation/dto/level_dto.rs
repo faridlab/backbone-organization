@@ -71,10 +71,10 @@ pub struct PatchLevelDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub grade: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "order_number")]
-    pub order_number: Option<i32>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub grade: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "order_number")]
+    pub order_number: Option<Option<i32>>,
 }
 
 impl PatchLevelDto {
@@ -232,12 +232,4 @@ impl backbone_core::ApplyUpdateDto<UpdateLevelDto> for Level {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Level here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 
